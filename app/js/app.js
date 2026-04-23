@@ -49,11 +49,22 @@
   }
 
   function populateFarmSelect() {
+    // Group farms by region
+    const regions = {};
     for (const farm of WIND_FARMS) {
-      const opt = document.createElement("option");
-      opt.value = farm.id;
-      opt.textContent = `${farm.name} (${farm.country})`;
-      farmSelect.appendChild(opt);
+      if (!regions[farm.region]) regions[farm.region] = [];
+      regions[farm.region].push(farm);
+    }
+    for (const [region, farms] of Object.entries(regions)) {
+      const group = document.createElement("optgroup");
+      group.label = region;
+      for (const farm of farms) {
+        const opt = document.createElement("option");
+        opt.value = farm.id;
+        opt.textContent = `${farm.name} — ${farm.country} (${farm.wtgType}, ${farm.capacityMW} MW)`;
+        group.appendChild(opt);
+      }
+      farmSelect.appendChild(group);
     }
   }
 
@@ -321,6 +332,9 @@
   function showSuccessScreen(report) {
     screenChecklist.style.display = "none";
     screenSuccess.style.display = "";
+
+    // Update dashboard link with current farm
+    document.getElementById("link-dashboard").href = `dashboard.html?farm=${encodeURIComponent(report.farmId)}`;
 
     const missing = report.missingItems.length;
     const title = missing === 0 ? "All Clear! ✅" : "Report Submitted";

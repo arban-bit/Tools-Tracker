@@ -31,11 +31,21 @@
   }
 
   function populateFarmFilter() {
+    const regions = {};
     for (const farm of WIND_FARMS) {
-      const opt = document.createElement("option");
-      opt.value = farm.id;
-      opt.textContent = `${farm.name} (${farm.country})`;
-      filterFarm.appendChild(opt);
+      if (!regions[farm.region]) regions[farm.region] = [];
+      regions[farm.region].push(farm);
+    }
+    for (const [region, farms] of Object.entries(regions)) {
+      const group = document.createElement("optgroup");
+      group.label = region;
+      for (const farm of farms) {
+        const opt = document.createElement("option");
+        opt.value = farm.id;
+        opt.textContent = `${farm.name} (${farm.country})`;
+        group.appendChild(opt);
+      }
+      filterFarm.appendChild(group);
     }
   }
 

@@ -60,15 +60,8 @@ body {
 }
 
 .header-logo .logo-icon {
-  width: 36px;
-  height: 36px;
-  background: var(--vestas-light-blue);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  font-weight: 700;
+  height: 28px;
+  width: auto;
 }
 
 .header-logo h1 {
@@ -161,12 +154,16 @@ body {
   min-height: 70vh;
   padding: 40px 20px;
   text-align: center;
+  background: linear-gradient(to bottom, rgba(0, 30, 60, 0.55) 0%, rgba(0, 30, 60, 0.75) 100%), url('../img/v236-background.jpg') center/cover no-repeat;
+  position: relative;
 }
 
 .login-screen .icon-large {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, var(--vestas-blue), var(--vestas-light-blue));
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.25);
   border-radius: 20px;
   display: flex;
   align-items: center;
@@ -179,14 +176,40 @@ body {
 
 .login-screen h2 {
   font-size: 24px;
-  color: var(--vestas-navy);
+  color: var(--vestas-white);
   margin-bottom: 8px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 
 .login-screen p {
-  color: var(--vestas-gray);
+  color: rgba(255,255,255,0.85);
   margin-bottom: 32px;
   max-width: 360px;
+}
+
+.login-screen .form-group {
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(10px);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,0.18);
+}
+
+.login-screen .form-group label {
+  color: rgba(255,255,255,0.9);
+}
+
+.login-screen .form-group input,
+.login-screen .form-group select {
+  background: rgba(255,255,255,0.92);
+  border-color: transparent;
+}
+
+.login-screen .form-group input:focus,
+.login-screen .form-group select:focus {
+  background: var(--vestas-white);
+  border-color: var(--vestas-light-blue);
+  box-shadow: 0 0 0 3px rgba(0, 163, 224, 0.25);
 }
 
 .form-group {
@@ -615,28 +638,34 @@ body {
 .success-screen {
   text-align: center;
   padding: 60px 20px;
+  background: linear-gradient(to bottom, rgba(0, 30, 60, 0.5) 0%, rgba(0, 30, 60, 0.7) 100%), url('../img/v236-background.jpg') center/cover no-repeat;
+  min-height: 70vh;
 }
 
 .success-screen .success-icon {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: rgba(40, 167, 69, 0.1);
+  background: rgba(40, 167, 69, 0.2);
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(40, 167, 69, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 24px;
   font-size: 40px;
+  color: #4ade80;
 }
 
 .success-screen h2 {
   font-size: 24px;
-  color: var(--vestas-navy);
+  color: var(--vestas-white);
   margin-bottom: 8px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 
 .success-screen p {
-  color: var(--vestas-gray);
+  color: rgba(255,255,255,0.85);
   margin-bottom: 24px;
 }
 

@@ -5,14 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QR Code Generator - Vestas V236</title>
   <link rel="stylesheet" href="css/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 </head>
 <body>
 
   <header class="header">
     <div class="header-top">
       <div class="header-logo">
-        <div class="logo-icon">V</div>
+        <img src="img/vestas-logo.jpg" alt="Vestas" class="logo-icon">
         <div>
           <h1>QR Code Generator</h1>
           <div class="subtitle">V236 Toolkit Tracker</div>
@@ -57,6 +56,7 @@
     <div class="qr-grid" id="qr-grid"></div>
   </div>
 
+  <script src="js/qrcode.min.js"></script>
   <script src="js/toolkit-data.js"></script>
   <script>
     (function () {
@@ -70,12 +70,22 @@
       const currentPath = window.location.href.replace(/qr-codes\.html.*/, "index.html");
       baseUrlInput.value = currentPath;
 
-      // Populate farm dropdown
+      // Populate farm dropdown grouped by region
+      const regions = {};
       for (const farm of WIND_FARMS) {
-        const opt = document.createElement("option");
-        opt.value = farm.id;
-        opt.textContent = `${farm.name} (${farm.country}) — ${farm.turbineCount} turbines`;
-        farmSelectQr.appendChild(opt);
+        if (!regions[farm.region]) regions[farm.region] = [];
+        regions[farm.region].push(farm);
+      }
+      for (const [region, farms] of Object.entries(regions)) {
+        const group = document.createElement("optgroup");
+        group.label = region;
+        for (const farm of farms) {
+          const opt = document.createElement("option");
+          opt.value = farm.id;
+          opt.textContent = `${farm.name} (${farm.country}) — ${farm.turbineCount} WTGs`;
+          group.appendChild(opt);
+        }
+        farmSelectQr.appendChild(group);
       }
 
       btnGenerate.addEventListener("click", generateCodes);
@@ -105,7 +115,7 @@
           sectionHeader.style.cssText = "grid-column: 1 / -1; padding: 16px 0 4px;";
           sectionHeader.innerHTML = `
             <h2 style="font-size: 20px; color: var(--vestas-navy);">${farm.name}</h2>
-            <p style="font-size: 13px; color: var(--vestas-gray);">${farm.country} — ${farm.turbineCount} turbines — Vessel: ${farm.vessel}</p>
+            <p style="font-size: 13px; color: var(--vestas-gray);">${farm.country} — ${farm.turbineCount} WTGs — ${farm.wtgType} — ${farm.capacityMW} MW</p>
           `;
           qrGrid.appendChild(sectionHeader);
 
@@ -139,12 +149,30 @@
             qrGrid.appendChild(card);
 
             // Generate QR code
-            if (typeof QRCode !== "undefined") {
-              QRCode.toCanvas(canvas, url, {
-                width: 160,
-                margin: 2,
-                color: { dark: "#001E3C", light: "#ffffff" }
-              });
+            if (typeof qrcode !== "undefined") {
+              const qr = qrcode(0, "M");
+              qr.addData(url);
+              qr.make();
+
+              const cellSize = 4;
+              const margin = 8;
+              const count = qr.getModuleCount();
+              const size = count * cellSize + margin * 2;
+              canvas.width = size;
+              canvas.height = size;
+              canvas.style.width = size + "px";
+              canvas.style.height = size + "px";
+              const ctx = canvas.getContext("2d");
+              ctx.fillStyle = "#ffffff";
+              ctx.fillRect(0, 0, size, size);
+              ctx.fillStyle = "#001E3C";
+              for (let r = 0; r < count; r++) {
+                for (let c = 0; c < count; c++) {
+                  if (qr.isDark(r, c)) {
+                    ctx.fillRect(c * cellSize + margin, r * cellSize + margin, cellSize, cellSize);
+                  }
+                }
+              }
             } else {
               canvas.style.display = "none";
               const fallback = document.createElement("div");

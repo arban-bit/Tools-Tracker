@@ -365,53 +365,155 @@ const TOOLKIT_DATA = {
 };
 
 // =========================================================
-// Wind Farms Configuration
+// Wind Farms Configuration — Source: SGM Sources SharePoint List
 // =========================================================
 const WIND_FARMS = [
+  // ---- Americas (AME) ----
   {
-    id: "DE-BORKUM",
-    name: "Borkum Riffgrund",
-    country: "Germany",
-    region: "Europe - North Sea",
-    turbineCount: 55,
-    stockkeeper: "Stockkeeper DE",
-    vessel: "SOV Aeolus"
+    id: "EW1",
+    name: "Empire Wind 1",
+    country: "United States",
+    region: "AME",
+    turbineCount: 54,
+    capacityMW: 810,
+    wtgType: "V236 Mk0A",
+    scd: "2026-09-01",
+    spNumber: "61793",
+    serviceManager: "Steven Gould"
+  },
+  // ---- Asia Pacific (APAC) ----
+  {
+    id: "TPC2",
+    name: "TPC Phase II",
+    country: "Taiwan",
+    region: "APAC",
+    turbineCount: 31,
+    capacityMW: 295,
+    wtgType: "V174 Mk3A",
+    scd: "2025-04-11",
+    spNumber: "60987",
+    serviceManager: "Mark Challinor"
   },
   {
-    id: "PL-BALTIC",
+    id: "FENGMIAO",
+    name: "Fengmiao",
+    country: "Taiwan",
+    region: "APAC",
+    turbineCount: 33,
+    capacityMW: 495,
+    wtgType: "V236 Mk0A",
+    scd: "2027-09-07",
+    spNumber: "61791",
+    serviceManager: "Mark Challinor"
+  },
+  {
+    id: "KTG",
+    name: "Katagami",
+    country: "Japan",
+    region: "APAC",
+    turbineCount: 21,
+    capacityMW: 315,
+    wtgType: "V236 Mk0A",
+    scd: "2028-06-30",
+    spNumber: "67067",
+    serviceManager: "Mark Challinor"
+  },
+  // ---- North & Central Europe (NCE) ----
+  {
+    id: "BALTIC-POWER",
     name: "Baltic Power",
     country: "Poland",
-    region: "Europe - Baltic Sea",
+    region: "NCE",
     turbineCount: 76,
-    stockkeeper: "Stockkeeper PL",
-    vessel: "SOV Baltic Wind"
+    capacityMW: 1140,
+    wtgType: "V236 Mk0A",
+    scd: "2026-03-14",
+    spNumber: "61545",
+    serviceManager: "Daria Jeziorna"
   },
   {
-    id: "UK-DOGGER",
-    name: "Dogger Bank",
+    id: "NSCA",
+    name: "NSCA",
     country: "United Kingdom",
-    region: "Europe - North Sea",
-    turbineCount: 87,
-    stockkeeper: "Stockkeeper UK",
-    vessel: "SOV Vanguard"
+    region: "NCE",
+    turbineCount: 44,
+    capacityMW: 660,
+    wtgType: "V236 Mk0A",
+    scd: "2026-07-13",
+    spNumber: "62783",
+    serviceManager: "Henrik Lehmkuhl"
   },
   {
-    id: "TW-CHANGHUA",
-    name: "Changhua Offshore",
-    country: "Taiwan",
-    region: "Asia - Pacific",
-    turbineCount: 62,
-    stockkeeper: "Stockkeeper TW",
-    vessel: "SOV Formosa"
+    id: "HE-DREITH",
+    name: "He Dreith",
+    country: "Germany",
+    region: "NCE",
+    turbineCount: 64,
+    capacityMW: 960,
+    wtgType: "V236 Mk0A",
+    scd: "2025-09-17",
+    spNumber: "60423",
+    serviceManager: "Sebastian Mügge"
   },
   {
-    id: "US-VINEYARD",
-    name: "Vineyard Wind",
-    country: "United States",
-    region: "Americas - Atlantic",
-    turbineCount: 47,
-    stockkeeper: "Stockkeeper US",
-    vessel: "SOV Nantucket"
+    id: "INCH-CAPE",
+    name: "Inch Cape",
+    country: "United Kingdom",
+    region: "NCE",
+    turbineCount: 72,
+    capacityMW: 1080,
+    wtgType: "V236 Mk0A",
+    scd: "2026-11-29",
+    spNumber: "65087",
+    serviceManager: "Kenneth Robertson"
+  },
+  {
+    id: "ORANJEWIND",
+    name: "Oranjewind",
+    country: "Netherlands",
+    region: "NCE",
+    turbineCount: 53,
+    capacityMW: 795,
+    wtgType: "V236 Mk0A",
+    scd: "2027-03-28",
+    spNumber: "66273",
+    serviceManager: "Klejda Hoxha"
+  },
+  {
+    id: "NORDLICHT-1",
+    name: "Nordlicht 1",
+    country: "Germany",
+    region: "NCE",
+    turbineCount: 68,
+    capacityMW: 1020,
+    wtgType: "V236 Mk0A",
+    scd: "2027-07-19",
+    spNumber: "64340",
+    serviceManager: "Jochen Holling"
+  },
+  {
+    id: "HKW6",
+    name: "HKW 6",
+    country: "Netherlands",
+    region: "NCE",
+    turbineCount: 52,
+    capacityMW: 780,
+    wtgType: "V236 Mk0A",
+    scd: "2026-06-03",
+    spNumber: "65456",
+    serviceManager: "Niels Alexandre Visser"
+  },
+  {
+    id: "BALTIC-EAGLE",
+    name: "Baltic Eagle",
+    country: "Germany",
+    region: "NCE",
+    turbineCount: 50,
+    capacityMW: 475,
+    wtgType: "V174 Mk3A",
+    scd: "2024-04-10",
+    spNumber: "60920",
+    serviceManager: ""
   }
 ];
 
@@ -429,7 +531,7 @@ function getTurbineListForFarm(farmId) {
 }
 
 // Legacy compat: default TURBINE_LIST (used if no farm selected)
-const TURBINE_LIST = getTurbineListForFarm("DE-BORKUM");
+const TURBINE_LIST = getTurbineListForFarm("BALTIC-POWER");
 
 // Helper: get total item count
 function getTotalItemCount() {
