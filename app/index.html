@@ -30,8 +30,15 @@
       <p>Verify all tools are present in the toolkit before leaving the turbine.</p>
 
       <div class="form-group">
+        <label for="farm-select">Wind Farm</label>
+        <select id="farm-select">
+          <option value="">— Select wind farm —</option>
+        </select>
+      </div>
+
+      <div class="form-group">
         <label for="turbine-select">Turbine</label>
-        <select id="turbine-select">
+        <select id="turbine-select" disabled>
           <option value="">— Select turbine —</option>
         </select>
       </div>
@@ -61,6 +68,10 @@
         <div class="header-badge" id="turbine-badge"></div>
       </div>
       <div class="header-info">
+        <div class="header-info-item">
+          <span class="label">Farm:</span>
+          <span class="value" id="farm-display"></span>
+        </div>
         <div class="header-info-item">
           <span class="label">Technician:</span>
           <span class="value" id="tech-display"></span>

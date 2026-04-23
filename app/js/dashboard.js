@@ -3,6 +3,11 @@
 (function () {
   "use strict";
 
+  // ---- URL Params (stockkeeper bookmark: dashboard.html?farm=DE-BORKUM) ----
+  const params = new URLSearchParams(window.location.search);
+  const urlFarmId = params.get("farm");
+
+  const filterFarm = document.getElementById("filter-farm");
   const filterTurbine = document.getElementById("filter-turbine");
   const filterStatus = document.getElementById("filter-status");
   const filterDrawer = document.getElementById("filter-drawer");
@@ -13,21 +18,68 @@
   const reportsEmpty = document.getElementById("reports-empty");
 
   function init() {
-    populateTurbineFilter();
+    populateFarmFilter();
     bindEvents();
+
+    // Pre-select farm from URL if provided
+    if (urlFarmId) {
+      filterFarm.value = urlFarmId;
+      onFarmFilterChange();
+    }
+
     refresh();
   }
 
-  function populateTurbineFilter() {
-    for (const t of TURBINE_LIST) {
+  function populateFarmFilter() {
+    for (const farm of WIND_FARMS) {
       const opt = document.createElement("option");
-      opt.value = t.id;
-      opt.textContent = t.id;
-      filterTurbine.appendChild(opt);
+      opt.value = farm.id;
+      opt.textContent = `${farm.name} (${farm.country})`;
+      filterFarm.appendChild(opt);
     }
   }
 
+  function onFarmFilterChange() {
+    const farmId = filterFarm.value;
+
+    // Update subtitle
+    const subtitle = document.getElementById("dashboard-subtitle");
+    if (farmId) {
+      const farm = WIND_FARMS.find(f => f.id === farmId);
+      subtitle.textContent = farm ? `${farm.name} — ${farm.country}` : "All Wind Farms";
+    } else {
+      subtitle.textContent = "V236 Toolkit Tracker — All Wind Farms";
+    }
+
+    // Update turbine filter options based on selected farm
+    filterTurbine.innerHTML = '<option value="">All Turbines</option>';
+    if (farmId) {
+      const turbines = getTurbineListForFarm(farmId);
+      for (const t of turbines) {
+        const opt = document.createElement("option");
+        opt.value = t.id;
+        opt.textContent = t.id;
+        filterTurbine.appendChild(opt);
+      }
+    } else {
+      // Show all turbines across all farms from existing data
+      const items = Storage.getMissingItems();
+      const turbineIds = [...new Set(items.map(i => `${i.farmId || ""}|${i.turbineId}`))];
+      for (const key of turbineIds.sort()) {
+        const [fId, tId] = key.split("|");
+        const opt = document.createElement("option");
+        opt.value = tId;
+        opt.textContent = fId ? `${tId} (${fId})` : tId;
+        filterTurbine.appendChild(opt);
+      }
+    }
+
+    renderItems();
+    renderReports();
+  }
+
   function bindEvents() {
+    filterFarm.addEventListener("change", () => { onFarmFilterChange(); updateStats(); });
     filterTurbine.addEventListener("change", renderItems);
     filterStatus.addEventListener("change", renderItems);
     filterDrawer.addEventListener("change", renderItems);
@@ -46,13 +98,20 @@
     document.getElementById("last-updated").textContent = "Updated: " + new Date().toLocaleTimeString();
   }
 
+  // Helper: get items filtered by selected farm
+  function getFilteredByFarm(items) {
+    const farmId = filterFarm.value;
+    if (!farmId) return items;
+    return items.filter(i => i.farmId === farmId);
+  }
+
   // ---- Stats ----
   function updateStats() {
-    const items = Storage.getMissingItems();
+    const items = getFilteredByFarm(Storage.getMissingItems());
     const missing = items.filter(i => i.status === "missing").length;
     const ordered = items.filter(i => i.status === "ordered").length;
     const restocked = items.filter(i => i.status === "restocked").length;
-    const turbines = new Set(items.filter(i => i.status !== "restocked").map(i => i.turbineId)).size;
+    const turbines = new Set(items.filter(i => i.status !== "restocked").map(i => `${i.farmId}|${i.turbineId}`)).size;
 
     document.getElementById("stat-total-missing").textContent = missing;
     document.getElementById("stat-total-ordered").textContent = ordered;
@@ -63,12 +122,14 @@
   // ---- Items Table ----
   function renderItems() {
     const items = Storage.getMissingItems();
+    const farmId = filterFarm.value;
     const turbine = filterTurbine.value;
     const status = filterStatus.value;
     const drawer = filterDrawer.value;
     const search = filterSearch.value.toLowerCase().trim();
 
     const filtered = items.filter(i => {
+      if (farmId && i.farmId !== farmId) return false;
       if (turbine && i.turbineId !== turbine) return false;
       if (status && i.status !== status) return false;
       if (drawer && i.drawerName !== drawer) return false;
@@ -94,6 +155,7 @@
 
     itemsTbody.innerHTML = filtered.map(item => `
       <tr>
+        <td><small>${escapeHtml(item.farmName || "—")}</small></td>
         <td><strong>${escapeHtml(item.turbineId)}</strong></td>
         <td>${escapeHtml(item.drawerName)}</td>
         <td>${escapeHtml(item.itemName)}<br><small style="color: var(--vestas-gray);">${escapeHtml(item.group)}</small></td>
@@ -111,7 +173,11 @@
 
   // ---- Reports Table ----
   function renderReports() {
-    const reports = Storage.getReports().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    let reports = Storage.getReports().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    const farmId = filterFarm.value;
+    if (farmId) {
+      reports = reports.filter(r => r.farmId === farmId);
+    }
 
     if (reports.length === 0) {
       reportsTbody.innerHTML = "";
@@ -124,6 +190,7 @@
     reportsTbody.innerHTML = reports.map(r => `
       <tr>
         <td><small>${formatDate(r.timestamp)}</small></td>
+        <td><small>${escapeHtml(r.farmName || "—")}</small></td>
         <td><strong>${escapeHtml(r.turbineId)}</strong></td>
         <td>${escapeHtml(r.technicianName)}</td>
         <td><span style="color: var(--vestas-green); font-weight: 600;">${r.presentCount}</span> / ${r.totalItems}</td>

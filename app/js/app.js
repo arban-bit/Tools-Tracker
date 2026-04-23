@@ -4,20 +4,23 @@
   "use strict";
 
   // ---- State ----
+  let currentFarm = null;
   let currentTurbine = null;
+  let currentTurbineList = [];
   let technicianName = "";
   let currentDrawer = 1;
-  // Track item status: key = item id, value = true (present) / false (missing)
   const itemStatus = {};
 
   // ---- URL Params (from QR code) ----
   const params = new URLSearchParams(window.location.search);
+  const qrFarmId = params.get("farm");
   const qrTurbineId = params.get("turbine");
 
   // ---- DOM References ----
   const screenLogin = document.getElementById("screen-login");
   const screenChecklist = document.getElementById("screen-checklist");
   const screenSuccess = document.getElementById("screen-success");
+  const farmSelect = document.getElementById("farm-select");
   const turbineSelect = document.getElementById("turbine-select");
   const techNameInput = document.getElementById("tech-name");
   const btnStart = document.getElementById("btn-start");
@@ -30,24 +33,52 @@
 
   // ---- Initialize ----
   function init() {
-    populateTurbineSelect();
+    populateFarmSelect();
     initAllItemsPresent();
     bindEvents();
 
-    // If QR code provided turbine ID, pre-select it
-    if (qrTurbineId) {
-      turbineSelect.value = qrTurbineId;
+    // If QR code provided farm + turbine, pre-select them
+    if (qrFarmId) {
+      farmSelect.value = qrFarmId;
+      onFarmChange();
+      if (qrTurbineId) {
+        turbineSelect.value = qrTurbineId;
+      }
       validateLoginForm();
     }
   }
 
-  function populateTurbineSelect() {
-    for (const t of TURBINE_LIST) {
+  function populateFarmSelect() {
+    for (const farm of WIND_FARMS) {
       const opt = document.createElement("option");
-      opt.value = t.id;
-      opt.textContent = `${t.name} (${t.toolkitId})`;
-      turbineSelect.appendChild(opt);
+      opt.value = farm.id;
+      opt.textContent = `${farm.name} (${farm.country})`;
+      farmSelect.appendChild(opt);
     }
+  }
+
+  function onFarmChange() {
+    const farmId = farmSelect.value;
+    currentFarm = WIND_FARMS.find(f => f.id === farmId) || null;
+
+    // Reset turbine select
+    turbineSelect.innerHTML = '<option value="">— Select turbine —</option>';
+
+    if (currentFarm) {
+      currentTurbineList = getTurbineListForFarm(currentFarm.id);
+      for (const t of currentTurbineList) {
+        const opt = document.createElement("option");
+        opt.value = t.id;
+        opt.textContent = `${t.name} (${t.toolkitId})`;
+        turbineSelect.appendChild(opt);
+      }
+      turbineSelect.disabled = false;
+    } else {
+      currentTurbineList = [];
+      turbineSelect.disabled = true;
+    }
+
+    validateLoginForm();
   }
 
   function initAllItemsPresent() {
@@ -61,6 +92,7 @@
   }
 
   function bindEvents() {
+    farmSelect.addEventListener("change", onFarmChange);
     turbineSelect.addEventListener("change", validateLoginForm);
     techNameInput.addEventListener("input", validateLoginForm);
     btnStart.addEventListener("click", startChecklist);
@@ -70,20 +102,22 @@
   }
 
   function validateLoginForm() {
+    const farmOk = farmSelect.value !== "";
     const turbineOk = turbineSelect.value !== "";
     const nameOk = techNameInput.value.trim().length >= 2;
-    btnStart.disabled = !(turbineOk && nameOk);
+    btnStart.disabled = !(farmOk && turbineOk && nameOk);
   }
 
   // ---- Start Checklist ----
   function startChecklist() {
-    currentTurbine = TURBINE_LIST.find(t => t.id === turbineSelect.value);
+    currentTurbine = currentTurbineList.find(t => t.id === turbineSelect.value);
     technicianName = techNameInput.value.trim();
 
-    if (!currentTurbine || !technicianName) return;
+    if (!currentFarm || !currentTurbine || !technicianName) return;
 
     // Populate header
     document.getElementById("turbine-badge").textContent = currentTurbine.id;
+    document.getElementById("farm-display").textContent = currentFarm.name;
     document.getElementById("tech-display").textContent = technicianName;
     document.getElementById("toolkit-display").textContent = currentTurbine.toolkitId;
     document.getElementById("total-items-display").textContent = getTotalItemCount();
@@ -261,6 +295,8 @@
     const missingItems = getMissingItemsList();
 
     const report = {
+      farmId: currentFarm.id,
+      farmName: currentFarm.name,
       turbineId: currentTurbine.id,
       toolkitId: currentTurbine.toolkitId,
       technicianName: technicianName,
@@ -298,6 +334,7 @@
     let detailsHtml = `
       <div class="card" style="max-width: 400px; margin: 0 auto; text-align: left;">
         <div class="card-body">
+          <div style="margin-bottom: 8px;"><strong>Wind Farm:</strong> ${report.farmName}</div>
           <div style="margin-bottom: 8px;"><strong>Turbine:</strong> ${report.turbineId}</div>
           <div style="margin-bottom: 8px;"><strong>Toolkit:</strong> ${report.toolkitId}</div>
           <div style="margin-bottom: 8px;"><strong>Technician:</strong> ${report.technicianName}</div>
@@ -355,15 +392,29 @@
 
   function resetApp() {
     // Reset state
+    currentFarm = null;
     currentTurbine = null;
+    currentTurbineList = [];
     technicianName = "";
     currentDrawer = 1;
     initAllItemsPresent();
 
     // Reset form
-    turbineSelect.value = qrTurbineId || "";
+    farmSelect.value = qrFarmId || "";
+    turbineSelect.innerHTML = '<option value="">— Select turbine —</option>';
+    turbineSelect.disabled = true;
     techNameInput.value = "";
     btnStart.disabled = true;
+
+    // Re-apply QR code pre-selection if present
+    if (qrFarmId) {
+      farmSelect.value = qrFarmId;
+      onFarmChange();
+      if (qrTurbineId) {
+        turbineSelect.value = qrTurbineId;
+      }
+      validateLoginForm();
+    }
 
     // Show login
     screenSuccess.style.display = "none";

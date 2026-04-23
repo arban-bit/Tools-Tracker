@@ -364,12 +364,72 @@ const TOOLKIT_DATA = {
   ]
 };
 
-// Default turbine list (50 turbines)
-const TURBINE_LIST = Array.from({ length: 55 }, (_, i) => ({
-  id: `WTG-${String(i + 1).padStart(2, "0")}`,
-  name: `WTG-${String(i + 1).padStart(2, "0")}`,
-  toolkitId: `TK-${String(i + 1).padStart(3, "0")}`
-}));
+// =========================================================
+// Wind Farms Configuration
+// =========================================================
+const WIND_FARMS = [
+  {
+    id: "DE-BORKUM",
+    name: "Borkum Riffgrund",
+    country: "Germany",
+    region: "Europe - North Sea",
+    turbineCount: 55,
+    stockkeeper: "Stockkeeper DE",
+    vessel: "SOV Aeolus"
+  },
+  {
+    id: "PL-BALTIC",
+    name: "Baltic Power",
+    country: "Poland",
+    region: "Europe - Baltic Sea",
+    turbineCount: 76,
+    stockkeeper: "Stockkeeper PL",
+    vessel: "SOV Baltic Wind"
+  },
+  {
+    id: "UK-DOGGER",
+    name: "Dogger Bank",
+    country: "United Kingdom",
+    region: "Europe - North Sea",
+    turbineCount: 87,
+    stockkeeper: "Stockkeeper UK",
+    vessel: "SOV Vanguard"
+  },
+  {
+    id: "TW-CHANGHUA",
+    name: "Changhua Offshore",
+    country: "Taiwan",
+    region: "Asia - Pacific",
+    turbineCount: 62,
+    stockkeeper: "Stockkeeper TW",
+    vessel: "SOV Formosa"
+  },
+  {
+    id: "US-VINEYARD",
+    name: "Vineyard Wind",
+    country: "United States",
+    region: "Americas - Atlantic",
+    turbineCount: 47,
+    stockkeeper: "Stockkeeper US",
+    vessel: "SOV Nantucket"
+  }
+];
+
+// Generate turbine list for a specific wind farm
+function getTurbineListForFarm(farmId) {
+  const farm = WIND_FARMS.find(f => f.id === farmId);
+  if (!farm) return [];
+  return Array.from({ length: farm.turbineCount }, (_, i) => ({
+    id: `WTG-${String(i + 1).padStart(2, "0")}`,
+    name: `WTG-${String(i + 1).padStart(2, "0")}`,
+    toolkitId: `TK-${farmId}-${String(i + 1).padStart(3, "0")}`,
+    farmId: farm.id,
+    farmName: farm.name
+  }));
+}
+
+// Legacy compat: default TURBINE_LIST (used if no farm selected)
+const TURBINE_LIST = getTurbineListForFarm("DE-BORKUM");
 
 // Helper: get total item count
 function getTotalItemCount() {

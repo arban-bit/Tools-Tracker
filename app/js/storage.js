@@ -43,6 +43,8 @@ const Storage = {
       if (!existing) {
         missingItems.push({
           id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2),
+          farmId: report.farmId || "",
+          farmName: report.farmName || "",
           toolkitId: report.toolkitId,
           turbineId: report.turbineId,
           itemId: item.id,
@@ -119,8 +121,10 @@ const Storage = {
     const items = this.getMissingItems();
     if (items.length === 0) return "";
 
-    const headers = ["Turbine", "Toolkit", "Drawer", "Group", "Item", "Status", "Reported By", "Reported At", "Ordered At", "Restocked At", "Restocked By"];
+    const headers = ["Wind Farm", "Farm ID", "Turbine", "Toolkit", "Drawer", "Group", "Item", "Status", "Reported By", "Reported At", "Ordered At", "Restocked At", "Restocked By"];
     const rows = items.map(i => [
+      i.farmName || "",
+      i.farmId || "",
       i.turbineId,
       i.toolkitId,
       i.drawerName,

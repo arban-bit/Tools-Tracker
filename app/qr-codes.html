@@ -38,17 +38,15 @@
           <label for="base-url">Base URL (where the app is hosted)</label>
           <input type="text" id="base-url" value="" placeholder="https://your-site.com/app/index.html">
           <small style="color: var(--vestas-gray); display: block; margin-top: 4px;">
-            Each QR code will append <code>?turbine=WTG-XX</code> to this URL. 
+            Each QR code will append <code>?farm=XX&amp;turbine=WTG-XX</code> to this URL. 
             Leave empty to use the current page location.
           </small>
         </div>
         <div class="form-group">
-          <label for="turbine-range">Turbine Range</label>
-          <div style="display: flex; gap: 12px; align-items: center;">
-            <input type="number" id="range-start" value="1" min="1" max="99" style="width: 80px;">
-            <span>to</span>
-            <input type="number" id="range-end" value="55" min="1" max="99" style="width: 80px;">
-          </div>
+          <label for="farm-select-qr">Wind Farm</label>
+          <select id="farm-select-qr">
+            <option value="">— All Wind Farms —</option>
+          </select>
         </div>
         <button class="btn btn-primary" id="btn-generate">Generate QR Codes</button>
         <button class="btn btn-outline" id="btn-print" style="margin-left: 8px;">🖨 Print QR Codes</button>
@@ -63,8 +61,7 @@
   <script>
     (function () {
       const baseUrlInput = document.getElementById("base-url");
-      const rangeStart = document.getElementById("range-start");
-      const rangeEnd = document.getElementById("range-end");
+      const farmSelectQr = document.getElementById("farm-select-qr");
       const btnGenerate = document.getElementById("btn-generate");
       const btnPrint = document.getElementById("btn-print");
       const qrGrid = document.getElementById("qr-grid");
@@ -73,56 +70,88 @@
       const currentPath = window.location.href.replace(/qr-codes\.html.*/, "index.html");
       baseUrlInput.value = currentPath;
 
+      // Populate farm dropdown
+      for (const farm of WIND_FARMS) {
+        const opt = document.createElement("option");
+        opt.value = farm.id;
+        opt.textContent = `${farm.name} (${farm.country}) — ${farm.turbineCount} turbines`;
+        farmSelectQr.appendChild(opt);
+      }
+
       btnGenerate.addEventListener("click", generateCodes);
       btnPrint.addEventListener("click", () => window.print());
 
-      // Auto-generate on load
+      // Auto-generate first farm on load
+      if (WIND_FARMS.length > 0) {
+        farmSelectQr.value = WIND_FARMS[0].id;
+      }
       generateCodes();
 
       function generateCodes() {
         const baseUrl = baseUrlInput.value.trim() || "index.html";
-        const start = parseInt(rangeStart.value) || 1;
-        const end = parseInt(rangeEnd.value) || 55;
+        const selectedFarmId = farmSelectQr.value;
         qrGrid.innerHTML = "";
 
-        for (let i = start; i <= end; i++) {
-          const turbineId = `WTG-${String(i).padStart(2, "0")}`;
-          const toolkitId = `TK-${String(i).padStart(3, "0")}`;
-          const separator = baseUrl.includes("?") ? "&" : "?";
-          const url = `${baseUrl}${separator}turbine=${turbineId}`;
+        // Determine which farms to generate
+        const farms = selectedFarmId
+          ? [WIND_FARMS.find(f => f.id === selectedFarmId)]
+          : WIND_FARMS;
 
-          const card = document.createElement("div");
-          card.className = "qr-card";
+        for (const farm of farms) {
+          if (!farm) continue;
 
-          const canvas = document.createElement("canvas");
-          card.appendChild(canvas);
+          // Farm section header
+          const sectionHeader = document.createElement("div");
+          sectionHeader.style.cssText = "grid-column: 1 / -1; padding: 16px 0 4px;";
+          sectionHeader.innerHTML = `
+            <h2 style="font-size: 20px; color: var(--vestas-navy);">${farm.name}</h2>
+            <p style="font-size: 13px; color: var(--vestas-gray);">${farm.country} — ${farm.turbineCount} turbines — Vessel: ${farm.vessel}</p>
+          `;
+          qrGrid.appendChild(sectionHeader);
 
-          const label = document.createElement("div");
-          label.className = "qr-label";
-          label.textContent = turbineId;
-          card.appendChild(label);
+          for (let i = 1; i <= farm.turbineCount; i++) {
+            const turbineId = `WTG-${String(i).padStart(2, "0")}`;
+            const toolkitId = `TK-${farm.id}-${String(i).padStart(3, "0")}`;
+            const separator = baseUrl.includes("?") ? "&" : "?";
+            const url = `${baseUrl}${separator}farm=${encodeURIComponent(farm.id)}&turbine=${turbineId}`;
 
-          const sublabel = document.createElement("div");
-          sublabel.className = "qr-sublabel";
-          sublabel.textContent = `Toolkit: ${toolkitId}`;
-          card.appendChild(sublabel);
+            const card = document.createElement("div");
+            card.className = "qr-card";
 
-          qrGrid.appendChild(card);
+            const canvas = document.createElement("canvas");
+            card.appendChild(canvas);
 
-          // Generate QR code
-          if (typeof QRCode !== "undefined") {
-            QRCode.toCanvas(canvas, url, {
-              width: 160,
-              margin: 2,
-              color: { dark: "#001E3C", light: "#ffffff" }
-            });
-          } else {
-            // Fallback if CDN fails: show URL as text
-            canvas.style.display = "none";
-            const fallback = document.createElement("div");
-            fallback.style.cssText = "padding: 20px; font-size: 11px; word-break: break-all; color: var(--vestas-gray);";
-            fallback.textContent = url;
-            card.insertBefore(fallback, label);
+            const label = document.createElement("div");
+            label.className = "qr-label";
+            label.textContent = turbineId;
+            card.appendChild(label);
+
+            const sublabel = document.createElement("div");
+            sublabel.className = "qr-sublabel";
+            sublabel.textContent = `${farm.name}`;
+            card.appendChild(sublabel);
+
+            const sublabel2 = document.createElement("div");
+            sublabel2.className = "qr-sublabel";
+            sublabel2.textContent = toolkitId;
+            card.appendChild(sublabel2);
+
+            qrGrid.appendChild(card);
+
+            // Generate QR code
+            if (typeof QRCode !== "undefined") {
+              QRCode.toCanvas(canvas, url, {
+                width: 160,
+                margin: 2,
+                color: { dark: "#001E3C", light: "#ffffff" }
+              });
+            } else {
+              canvas.style.display = "none";
+              const fallback = document.createElement("div");
+              fallback.style.cssText = "padding: 20px; font-size: 11px; word-break: break-all; color: var(--vestas-gray);";
+              fallback.textContent = url;
+              card.insertBefore(fallback, label);
+            }
           }
         }
       }
