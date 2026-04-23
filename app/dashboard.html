@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stockkeeper Dashboard - Vestas V236</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-top">
+      <div class="header-logo">
+        <div class="logo-icon">V</div>
+        <div>
+          <h1>Stockkeeper Dashboard</h1>
+          <div class="subtitle">V236 Toolkit Tracker</div>
+        </div>
+      </div>
+      <div class="header-badge" id="last-updated"></div>
+    </div>
+  </header>
+
+  <nav class="nav-links">
+    <a href="index.html">Toolkit Checker</a>
+    <a href="dashboard.html" class="active">Dashboard</a>
+    <a href="qr-codes.html">QR Codes</a>
+  </nav>
+
+  <div class="container" style="padding-bottom: 40px;">
+
+    <!-- Stats Cards -->
+    <div class="dashboard-grid" id="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon red">⚠</div>
+        <div class="stat-number" id="stat-total-missing">0</div>
+        <div class="stat-desc">Missing Items</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange">📦</div>
+        <div class="stat-number" id="stat-total-ordered">0</div>
+        <div class="stat-desc">Ordered</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green">✓</div>
+        <div class="stat-number" id="stat-total-restocked">0</div>
+        <div class="stat-desc">Restocked</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue">🏗</div>
+        <div class="stat-number" id="stat-turbines-affected">0</div>
+        <div class="stat-desc">Turbines Affected</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <h2 style="font-size: 18px; color: var(--vestas-navy);">Missing Items Registry</h2>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="btn btn-outline btn-sm" id="btn-export-csv" title="Export to CSV">📄 Export CSV</button>
+        <button class="btn btn-outline btn-sm" id="btn-export-json" title="Export data">💾 Export Data</button>
+        <label class="btn btn-outline btn-sm" style="cursor: pointer;" title="Import data">
+          📥 Import Data
+          <input type="file" id="btn-import" accept=".json" style="display: none;">
+        </label>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+      <select id="filter-turbine">
+        <option value="">All Turbines</option>
+      </select>
+      <select id="filter-status">
+        <option value="">All Statuses</option>
+        <option value="missing">Missing</option>
+        <option value="ordered">Ordered</option>
+        <option value="restocked">Restocked</option>
+      </select>
+      <select id="filter-drawer">
+        <option value="">All Drawers</option>
+        <option value="Drawer 1">Drawer 1</option>
+        <option value="Drawer 2">Drawer 2</option>
+        <option value="Drawer 3">Drawer 3</option>
+        <option value="Drawer 4">Drawer 4</option>
+        <option value="Drawer 5">Drawer 5</option>
+        <option value="Drawer 6">Drawer 6</option>
+      </select>
+      <input type="text" id="filter-search" placeholder="Search item name...">
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div class="table-wrapper">
+        <table id="items-table">
+          <thead>
+            <tr>
+              <th>Turbine</th>
+              <th>Drawer</th>
+              <th>Item</th>
+              <th>Status</th>
+              <th>Reported By</th>
+              <th>Reported</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="items-tbody">
+          </tbody>
+        </table>
+      </div>
+
+      <div class="empty-state" id="empty-state" style="display: none;">
+        <div class="empty-icon">📋</div>
+        <h3>No Items Found</h3>
+        <p>No missing items match your current filters. When technicians submit reports, missing items will appear here.</p>
+      </div>
+    </div>
+
+    <!-- Recent Reports -->
+    <div class="card" style="margin-top: 24px;">
+      <div class="card-header">
+        <h2>Recent Reports</h2>
+        <span class="btn btn-sm btn-outline" id="btn-clear-data" style="font-size: 11px;">Clear All Data</span>
+      </div>
+      <div class="table-wrapper">
+        <table id="reports-table">
+          <thead>
+            <tr>
+              <th>Date/Time</th>
+              <th>Turbine</th>
+              <th>Technician</th>
+              <th>Present</th>
+              <th>Missing</th>
+            </tr>
+          </thead>
+          <tbody id="reports-tbody">
+          </tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="reports-empty" style="display: none;">
+        <div class="empty-icon">📝</div>
+        <h3>No Reports Yet</h3>
+        <p>Reports will appear here after technicians submit their toolkit checks.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/toolkit-data.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

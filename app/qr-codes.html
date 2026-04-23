@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Code Generator - Vestas V236</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-top">
+      <div class="header-logo">
+        <div class="logo-icon">V</div>
+        <div>
+          <h1>QR Code Generator</h1>
+          <div class="subtitle">V236 Toolkit Tracker</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="nav-links">
+    <a href="index.html">Toolkit Checker</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="qr-codes.html" class="active">QR Codes</a>
+  </nav>
+
+  <div class="container">
+    <!-- Configuration -->
+    <div class="card">
+      <div class="card-header">
+        <h2>QR Code Settings</h2>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label for="base-url">Base URL (where the app is hosted)</label>
+          <input type="text" id="base-url" value="" placeholder="https://your-site.com/app/index.html">
+          <small style="color: var(--vestas-gray); display: block; margin-top: 4px;">
+            Each QR code will append <code>?turbine=WTG-XX</code> to this URL. 
+            Leave empty to use the current page location.
+          </small>
+        </div>
+        <div class="form-group">
+          <label for="turbine-range">Turbine Range</label>
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <input type="number" id="range-start" value="1" min="1" max="99" style="width: 80px;">
+            <span>to</span>
+            <input type="number" id="range-end" value="55" min="1" max="99" style="width: 80px;">
+          </div>
+        </div>
+        <button class="btn btn-primary" id="btn-generate">Generate QR Codes</button>
+        <button class="btn btn-outline" id="btn-print" style="margin-left: 8px;">🖨 Print QR Codes</button>
+      </div>
+    </div>
+
+    <!-- QR Code Grid -->
+    <div class="qr-grid" id="qr-grid"></div>
+  </div>
+
+  <script src="js/toolkit-data.js"></script>
+  <script>
+    (function () {
+      const baseUrlInput = document.getElementById("base-url");
+      const rangeStart = document.getElementById("range-start");
+      const rangeEnd = document.getElementById("range-end");
+      const btnGenerate = document.getElementById("btn-generate");
+      const btnPrint = document.getElementById("btn-print");
+      const qrGrid = document.getElementById("qr-grid");
+
+      // Default base URL to current location
+      const currentPath = window.location.href.replace(/qr-codes\.html.*/, "index.html");
+      baseUrlInput.value = currentPath;
+
+      btnGenerate.addEventListener("click", generateCodes);
+      btnPrint.addEventListener("click", () => window.print());
+
+      // Auto-generate on load
+      generateCodes();
+
+      function generateCodes() {
+        const baseUrl = baseUrlInput.value.trim() || "index.html";
+        const start = parseInt(rangeStart.value) || 1;
+        const end = parseInt(rangeEnd.value) || 55;
+        qrGrid.innerHTML = "";
+
+        for (let i = start; i <= end; i++) {
+          const turbineId = `WTG-${String(i).padStart(2, "0")}`;
+          const toolkitId = `TK-${String(i).padStart(3, "0")}`;
+          const separator = baseUrl.includes("?") ? "&" : "?";
+          const url = `${baseUrl}${separator}turbine=${turbineId}`;
+
+          const card = document.createElement("div");
+          card.className = "qr-card";
+
+          const canvas = document.createElement("canvas");
+          card.appendChild(canvas);
+
+          const label = document.createElement("div");
+          label.className = "qr-label";
+          label.textContent = turbineId;
+          card.appendChild(label);
+
+          const sublabel = document.createElement("div");
+          sublabel.className = "qr-sublabel";
+          sublabel.textContent = `Toolkit: ${toolkitId}`;
+          card.appendChild(sublabel);
+
+          qrGrid.appendChild(card);
+
+          // Generate QR code
+          if (typeof QRCode !== "undefined") {
+            QRCode.toCanvas(canvas, url, {
+              width: 160,
+              margin: 2,
+              color: { dark: "#001E3C", light: "#ffffff" }
+            });
+          } else {
+            // Fallback if CDN fails: show URL as text
+            canvas.style.display = "none";
+            const fallback = document.createElement("div");
+            fallback.style.cssText = "padding: 20px; font-size: 11px; word-break: break-all; color: var(--vestas-gray);";
+            fallback.textContent = url;
+            card.insertBefore(fallback, label);
+          }
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
