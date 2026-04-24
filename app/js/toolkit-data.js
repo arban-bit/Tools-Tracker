@@ -561,10 +561,47 @@ function getTurbineListForFarm(farmId) {
 const TURBINE_LIST = getTurbineListForFarm("BALTIC-POWER");
 
 // Resolve the toolkit template for a given farm
+// Custom (localStorage) templates take priority over built-in ones
 function getToolkitForFarm(farmId) {
   const farm = WIND_FARMS.find(f => f.id === farmId);
   if (!farm) return TOOLKIT_TEMPLATES["V236_STANDARD"];
+  const custom = getCustomTemplate(farm.toolkit);
+  if (custom) return custom;
   return TOOLKIT_TEMPLATES[farm.toolkit] || TOOLKIT_TEMPLATES["V236_STANDARD"];
+}
+
+// ---- Custom Template Storage (localStorage, future: SharePoint) ----
+
+function getCustomTemplates() {
+  const data = localStorage.getItem("toolkit-custom-templates");
+  return data ? JSON.parse(data) : {};
+}
+
+function getCustomTemplate(templateId) {
+  return getCustomTemplates()[templateId] || null;
+}
+
+function saveCustomTemplate(templateId, template) {
+  const all = getCustomTemplates();
+  all[templateId] = template;
+  localStorage.setItem("toolkit-custom-templates", JSON.stringify(all));
+}
+
+function deleteCustomTemplate(templateId) {
+  const all = getCustomTemplates();
+  delete all[templateId];
+  localStorage.setItem("toolkit-custom-templates", JSON.stringify(all));
+}
+
+function getEffectiveTemplate(templateId) {
+  return getCustomTemplate(templateId) || TOOLKIT_TEMPLATES[templateId] || null;
+}
+
+// Get list of all known template IDs (built-in + custom)
+function getAllTemplateIds() {
+  const builtIn = Object.keys(TOOLKIT_TEMPLATES);
+  const custom = Object.keys(getCustomTemplates());
+  return [...new Set([...builtIn, ...custom])];
 }
 
 // Helper: get total item count (optional toolkit param)
