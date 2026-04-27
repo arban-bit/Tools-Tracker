@@ -117,6 +117,13 @@
     btnSubmit.addEventListener("click", showConfirmModal);
     btnConfirmSubmit.addEventListener("click", submitReport);
     document.getElementById("btn-new-check").addEventListener("click", resetApp);
+    const btnCancel = document.getElementById("btn-cancel-check");
+    if (btnCancel) btnCancel.addEventListener("click", cancelChecklist);
+  }
+
+  function cancelChecklist() {
+    if (!confirm("Cancel this toolkit check? Any unsaved changes will be lost.")) return;
+    resetApp();
   }
 
   function validateLoginForm() {
