@@ -1048,3 +1048,159 @@ tr:hover td {
 .data-table tbody tr:hover {
   background: #f0f8ff;
 }
+
+/* ---- Clickable Header Logo ---- */
+.header-logo-link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.header-logo-link:hover {
+  opacity: 0.85;
+}
+
+.header-logo-link:focus-visible {
+  outline: 2px solid var(--vestas-light-blue);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+/* ---- Landing Page ---- */
+.landing {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px 40px;
+}
+
+.landing-hero {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.landing-hero h2 {
+  font-size: 28px;
+  color: var(--vestas-navy);
+  margin-bottom: 8px;
+}
+
+.landing-hero p {
+  font-size: 16px;
+  color: var(--vestas-gray);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.landing-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  background: var(--vestas-white);
+  border: 1px solid var(--vestas-border);
+  border-radius: var(--radius-lg);
+  padding: 24px 20px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+  min-height: 200px;
+}
+
+.tile::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: var(--vestas-light-blue);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--vestas-light-blue);
+}
+
+.tile:hover::before {
+  opacity: 1;
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--vestas-blue);
+  outline-offset: 2px;
+}
+
+.tile-primary {
+  background: linear-gradient(135deg, var(--vestas-navy) 0%, var(--vestas-blue) 100%);
+  color: var(--vestas-white);
+  border-color: transparent;
+}
+
+.tile-primary::before {
+  background: var(--vestas-light-blue);
+}
+
+.tile-primary:hover {
+  border-color: transparent;
+  box-shadow: var(--shadow-lg);
+}
+
+.tile-icon {
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.tile-body {
+  flex: 1;
+}
+
+.tile-body h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: inherit;
+}
+
+.tile-primary .tile-body h3 {
+  color: var(--vestas-white);
+}
+
+.tile-body p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--vestas-gray);
+}
+
+.tile-primary .tile-body p {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.tile-cta {
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vestas-blue);
+}
+
+.tile-primary .tile-cta {
+  color: var(--vestas-white);
+}
+
+.landing-footer {
+  text-align: center;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--vestas-border);
+  color: var(--vestas-gray);
+  font-size: 12px;
+}

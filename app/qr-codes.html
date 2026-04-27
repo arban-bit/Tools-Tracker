@@ -10,18 +10,19 @@
 
   <header class="header">
     <div class="header-top">
-      <div class="header-logo">
+      <a href="index.html" class="header-logo header-logo-link" title="Back to home">
         <img src="img/vestas-logo.jpg" alt="Vestas" class="logo-icon">
         <div>
           <h1>QR Code Generator</h1>
           <div class="subtitle">V236 Toolkit Tracker</div>
         </div>
-      </div>
+      </a>
     </div>
   </header>
 
   <nav class="nav-links">
-    <a href="index.html">Toolkit Checker</a>
+    <a href="index.html">Home</a>
+    <a href="check.html">Toolkit Checker</a>
     <a href="dashboard.html">Dashboard</a>
     <a href="qr-codes.html" class="active">QR Codes</a>
     <a href="toolkit-manager.html">Toolkit Manager</a>
@@ -36,7 +37,7 @@
       <div class="card-body">
         <div class="form-group">
           <label for="base-url">Base URL (where the app is hosted)</label>
-          <input type="text" id="base-url" value="" placeholder="https://your-site.com/app/index.html">
+          <input type="text" id="base-url" value="" placeholder="https://your-site.com/app/check.html">
           <small style="color: var(--vestas-gray); display: block; margin-top: 4px;">
             Each QR code will append <code>?farm=XX&amp;turbine=WTG-XX</code> to this URL. 
             Leave empty to use the current page location.
@@ -68,7 +69,7 @@
       const qrGrid = document.getElementById("qr-grid");
 
       // Default base URL to current location
-      const currentPath = window.location.href.replace(/qr-codes\.html.*/, "index.html");
+      const currentPath = window.location.href.replace(/qr-codes\.html.*/, "check.html");
       baseUrlInput.value = currentPath;
 
       // Populate farm dropdown grouped by region
@@ -100,7 +101,7 @@
       generateCodes();
 
       function generateCodes() {
-        const baseUrl = baseUrlInput.value.trim() || "index.html";
+        const baseUrl = baseUrlInput.value.trim() || "check.html";
         const selectedFarmId = farmSelectQr.value;
         qrGrid.innerHTML = "";
 
