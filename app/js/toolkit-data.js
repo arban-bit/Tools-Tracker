@@ -372,10 +372,6 @@ TOOLKIT_TEMPLATES["V236_STANDARD"] = {
   ]
 };
 
-// Placeholder: V174 farms use the same toolkit until a specific list is provided.
-// To customise, replace with a full { name, trolley, drawers: [...] } object.
-TOOLKIT_TEMPLATES["V174_STANDARD"] = TOOLKIT_TEMPLATES["V236_STANDARD"];
-
 // Backward-compatible alias (used by pages that don't pick a farm)
 const TOOLKIT_DATA = TOOLKIT_TEMPLATES["V236_STANDARD"];
 
@@ -406,7 +402,7 @@ const WIND_FARMS = [
     turbineCount: 31,
     capacityMW: 295,
     wtgType: "V174 Mk3A",
-    toolkit: "V174_STANDARD",
+    toolkit: "V236_STANDARD",
     scd: "2025-04-11",
     spNumber: "60987",
     serviceManager: "Mark Challinor"
@@ -537,7 +533,7 @@ const WIND_FARMS = [
     turbineCount: 50,
     capacityMW: 475,
     wtgType: "V174 Mk3A",
-    toolkit: "V174_STANDARD",
+    toolkit: "V236_STANDARD",
     scd: "2024-04-10",
     spNumber: "60920",
     serviceManager: ""
@@ -561,13 +557,17 @@ function getTurbineListForFarm(farmId) {
 const TURBINE_LIST = getTurbineListForFarm("BALTIC-POWER");
 
 // Resolve the toolkit template for a given farm
-// Custom (localStorage) templates take priority over built-in ones
+// Custom assignments + custom templates take priority over built-in ones
 function getToolkitForFarm(farmId) {
   const farm = WIND_FARMS.find(f => f.id === farmId);
   if (!farm) return TOOLKIT_TEMPLATES["V236_STANDARD"];
-  const custom = getCustomTemplate(farm.toolkit);
-  if (custom) return custom;
-  return TOOLKIT_TEMPLATES[farm.toolkit] || TOOLKIT_TEMPLATES["V236_STANDARD"];
+  const assignedId = getFarmTemplateAssignment(farmId) || farm.toolkit;
+  return getEffectiveTemplate(assignedId) || TOOLKIT_TEMPLATES["V236_STANDARD"];
+}
+
+// Resolve which template ID a farm is using (custom assignment or default)
+function getFarmTemplateId(farmId) {
+  return getFarmTemplateAssignment(farmId) || (WIND_FARMS.find(f => f.id === farmId) || {}).toolkit || "V236_STANDARD";
 }
 
 // ---- Custom Template Storage (localStorage, future: SharePoint) ----
@@ -602,6 +602,27 @@ function getAllTemplateIds() {
   const builtIn = Object.keys(TOOLKIT_TEMPLATES);
   const custom = Object.keys(getCustomTemplates());
   return [...new Set([...builtIn, ...custom])];
+}
+
+// ---- Farm-to-Template Assignment (localStorage, future: SharePoint) ----
+
+function getFarmTemplateAssignments() {
+  const data = localStorage.getItem("toolkit-farm-assignments");
+  return data ? JSON.parse(data) : {};
+}
+
+function getFarmTemplateAssignment(farmId) {
+  return getFarmTemplateAssignments()[farmId] || null;
+}
+
+function setFarmTemplateAssignment(farmId, templateId) {
+  const all = getFarmTemplateAssignments();
+  if (templateId) {
+    all[farmId] = templateId;
+  } else {
+    delete all[farmId]; // revert to default
+  }
+  localStorage.setItem("toolkit-farm-assignments", JSON.stringify(all));
 }
 
 // Helper: get total item count (optional toolkit param)

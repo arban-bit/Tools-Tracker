@@ -1,4 +1,4 @@
-// Toolkit Manager - Logic for viewing, exporting, and importing toolkit templates
+// Toolkit Manager - Create, clone, import, export, and assign toolkit templates
 
 (function () {
   "use strict";
@@ -7,11 +7,15 @@
   const templateInfo = document.getElementById("template-info");
   const actionsCard = document.getElementById("actions-card");
   const contentsCard = document.getElementById("contents-card");
+  const assignCard = document.getElementById("assign-card");
   const templateContents = document.getElementById("template-contents");
   const importPreview = document.getElementById("import-preview");
+  const createDialog = document.getElementById("create-dialog");
+  const btnClone = document.getElementById("btn-clone");
 
   let selectedTemplateId = null;
-  let pendingImport = null; // staged template before confirm
+  let pendingImport = null;
+  let cloneSourceId = null; // set when cloning
 
   // ---- Init ----
   function init() {
@@ -20,19 +24,30 @@
   }
 
   function populateTemplateSelect() {
+    const prev = templateSelect.value;
     templateSelect.innerHTML = '<option value="">— Select a template —</option>';
     const ids = getAllTemplateIds();
     for (const id of ids) {
       const opt = document.createElement("option");
       opt.value = id;
-      const custom = getCustomTemplate(id);
-      opt.textContent = id + (custom ? " (customised)" : "");
+      const isBuiltIn = !!TOOLKIT_TEMPLATES[id];
+      const isCustom = !!getCustomTemplate(id);
+      let label = id;
+      if (isCustom && isBuiltIn) label += " (customised)";
+      else if (isCustom) label += " (custom)";
+      else label += " (default)";
+      opt.textContent = label;
       templateSelect.appendChild(opt);
     }
+    if (prev) templateSelect.value = prev;
   }
 
   function bindEvents() {
     templateSelect.addEventListener("change", onTemplateChange);
+    document.getElementById("btn-create-new").addEventListener("click", () => openCreateDialog(false));
+    btnClone.addEventListener("click", () => openCreateDialog(true));
+    document.getElementById("btn-create-confirm").addEventListener("click", confirmCreate);
+    document.getElementById("btn-create-cancel").addEventListener("click", closeCreateDialog);
     document.getElementById("btn-export-json").addEventListener("click", exportJSON);
     document.getElementById("btn-export-csv").addEventListener("click", exportCSV);
     document.getElementById("import-json").addEventListener("change", onImportJSON);
@@ -40,17 +55,22 @@
     document.getElementById("btn-confirm-import").addEventListener("click", confirmImport);
     document.getElementById("btn-cancel-import").addEventListener("click", cancelImport);
     document.getElementById("btn-revert").addEventListener("click", revertToDefault);
+    document.getElementById("btn-delete-template").addEventListener("click", deleteTemplate);
   }
 
   // ---- Template Selection ----
   function onTemplateChange() {
     selectedTemplateId = templateSelect.value;
     cancelImport();
+    closeCreateDialog();
+
+    btnClone.disabled = !selectedTemplateId;
 
     if (!selectedTemplateId) {
       templateInfo.style.display = "none";
       actionsCard.style.display = "none";
       contentsCard.style.display = "none";
+      assignCard.style.display = "none";
       return;
     }
 
@@ -59,28 +79,157 @@
 
     // Stats
     const totalItems = getTotalItemCount(tpl);
-    const farmsUsing = WIND_FARMS.filter(f => f.toolkit === selectedTemplateId);
+    const farmsUsing = WIND_FARMS.filter(f => getFarmTemplateId(f.id) === selectedTemplateId);
 
     document.getElementById("info-drawers").textContent = tpl.drawers.length;
     document.getElementById("info-items").textContent = totalItems;
     document.getElementById("info-farms").textContent = farmsUsing.length;
     document.getElementById("info-farms-list").textContent = farmsUsing.length
       ? "Used by: " + farmsUsing.map(f => f.name).join(", ")
-      : "Not assigned to any farm";
+      : "Not assigned to any farm yet.";
 
-    // Custom badge
+    // Custom badge + delete button
     const isCustom = !!getCustomTemplate(selectedTemplateId);
-    document.getElementById("info-custom-badge").style.display = isCustom ? "" : "none";
+    const isBuiltIn = !!TOOLKIT_TEMPLATES[selectedTemplateId];
+    const customBadge = document.getElementById("info-custom-badge");
+    customBadge.style.display = isCustom ? "" : "none";
+    document.getElementById("btn-revert").style.display = (isCustom && isBuiltIn) ? "" : "none";
+    document.getElementById("btn-delete-template").style.display = (isCustom && !isBuiltIn) ? "" : "none";
 
     templateInfo.style.display = "";
     actionsCard.style.display = "";
     contentsCard.style.display = "";
+    assignCard.style.display = "";
 
     renderContents(tpl);
+    renderFarmAssignments();
+  }
+
+  // ---- Create / Clone Dialog ----
+  function openCreateDialog(isClone) {
+    cloneSourceId = isClone ? selectedTemplateId : null;
+    document.getElementById("create-dialog-title").textContent = isClone
+      ? `Clone "${selectedTemplateId}"`
+      : "Create New Template";
+    document.getElementById("new-template-id").value = isClone ? selectedTemplateId + "_COPY" : "";
+    const sourceTpl = isClone ? getEffectiveTemplate(selectedTemplateId) : null;
+    document.getElementById("new-template-name").value = sourceTpl ? sourceTpl.name + " (Copy)" : "";
+    document.getElementById("new-template-trolley").value = sourceTpl ? sourceTpl.trolley : "Bato Trolley";
+    createDialog.style.display = "";
+  }
+
+  function closeCreateDialog() {
+    createDialog.style.display = "none";
+    cloneSourceId = null;
+  }
+
+  function confirmCreate() {
+    const id = document.getElementById("new-template-id").value.trim().toUpperCase().replace(/\s+/g, "_");
+    const name = document.getElementById("new-template-name").value.trim();
+    const trolley = document.getElementById("new-template-trolley").value.trim();
+
+    if (!id) { alert("Template ID is required."); return; }
+    if (!name) { alert("Display name is required."); return; }
+    if (getEffectiveTemplate(id)) { alert(`Template "${id}" already exists. Choose a different ID.`); return; }
+
+    let drawers;
+    if (cloneSourceId) {
+      const source = getEffectiveTemplate(cloneSourceId);
+      drawers = JSON.parse(JSON.stringify(source.drawers)); // deep copy
+    } else {
+      drawers = []; // empty, user will import CSV/JSON
+    }
+
+    saveCustomTemplate(id, { name, trolley, drawers });
+    closeCreateDialog();
+    populateTemplateSelect();
+    templateSelect.value = id;
+    selectedTemplateId = id;
+    onTemplateChange();
+    showToast(cloneSourceId ? `Cloned as "${id}"` : `Created "${id}" — import a CSV or JSON to add items.`);
+  }
+
+  // ---- Delete custom-only template ----
+  function deleteTemplate() {
+    if (!selectedTemplateId) return;
+    const isBuiltIn = !!TOOLKIT_TEMPLATES[selectedTemplateId];
+    if (isBuiltIn) { alert("Cannot delete a built-in template. Use 'Revert to Default' instead."); return; }
+
+    // Check if any farms are assigned
+    const farmsUsing = WIND_FARMS.filter(f => getFarmTemplateId(f.id) === selectedTemplateId);
+    if (farmsUsing.length > 0) {
+      if (!confirm(`"${selectedTemplateId}" is used by ${farmsUsing.length} farm(s): ${farmsUsing.map(f => f.name).join(", ")}.\nThey will revert to V236_STANDARD. Continue?`)) return;
+      for (const farm of farmsUsing) {
+        setFarmTemplateAssignment(farm.id, null);
+      }
+    } else {
+      if (!confirm(`Delete custom template "${selectedTemplateId}"?`)) return;
+    }
+
+    deleteCustomTemplate(selectedTemplateId);
+    selectedTemplateId = null;
+    templateSelect.value = "";
+    populateTemplateSelect();
+    onTemplateChange();
+    showToast("Template deleted.");
+  }
+
+  // ---- Farm Assignments ----
+  function renderFarmAssignments() {
+    const container = document.getElementById("farm-assignments");
+    let html = "";
+
+    // Group farms by region
+    const regions = {};
+    for (const farm of WIND_FARMS) {
+      if (!regions[farm.region]) regions[farm.region] = [];
+      regions[farm.region].push(farm);
+    }
+
+    for (const [region, farms] of Object.entries(regions)) {
+      html += `<div style="font-weight: 600; font-size: 13px; color: var(--vestas-blue); margin: 12px 0 4px;">${region}</div>`;
+      for (const farm of farms) {
+        const currentTplId = getFarmTemplateId(farm.id);
+        const isAssigned = currentTplId === selectedTemplateId;
+        html += `
+          <label style="display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer;">
+            <input type="checkbox" data-farm="${farm.id}" ${isAssigned ? "checked" : ""} class="farm-assign-cb">
+            <span>${farm.name}</span>
+            <span style="font-size: 12px; color: var(--vestas-gray);">(${farm.country}, ${farm.wtgType})</span>
+            ${currentTplId !== selectedTemplateId && currentTplId !== "V236_STANDARD" ? `<span style="font-size: 11px; color: var(--vestas-blue);">currently: ${currentTplId}</span>` : ""}
+          </label>
+        `;
+      }
+    }
+
+    container.innerHTML = html;
+
+    // Bind checkbox changes
+    container.querySelectorAll(".farm-assign-cb").forEach(cb => {
+      cb.addEventListener("change", function () {
+        const farmId = this.dataset.farm;
+        if (this.checked) {
+          setFarmTemplateAssignment(farmId, selectedTemplateId);
+        } else {
+          setFarmTemplateAssignment(farmId, null); // revert to default
+        }
+        // Update stats
+        const farmsUsing = WIND_FARMS.filter(f => getFarmTemplateId(f.id) === selectedTemplateId);
+        document.getElementById("info-farms").textContent = farmsUsing.length;
+        document.getElementById("info-farms-list").textContent = farmsUsing.length
+          ? "Used by: " + farmsUsing.map(f => f.name).join(", ")
+          : "Not assigned to any farm yet.";
+      });
+    });
   }
 
   // ---- Render Template Contents ----
   function renderContents(tpl) {
+    if (!tpl.drawers || tpl.drawers.length === 0) {
+      templateContents.innerHTML = `<p style="color: var(--vestas-gray); text-align: center; padding: 24px;">This template has no items yet. Import a CSV or JSON to populate it.</p>`;
+      return;
+    }
+
     let html = `<p style="margin-bottom: 12px; font-weight: 600; color: var(--vestas-navy);">${tpl.name} — ${tpl.trolley}</p>`;
 
     for (const drawer of tpl.drawers) {
@@ -88,7 +237,7 @@
       html += `
         <div class="tool-group" style="margin-bottom: 12px;">
           <div class="tool-group-header">
-            <h3>${drawer.name} — ${drawer.description}</h3>
+            <h3>${drawer.name} — ${drawer.description || ""}</h3>
             <span class="group-count">${itemCount} items</span>
           </div>
       `;
@@ -123,7 +272,7 @@
     for (const drawer of tpl.drawers) {
       for (const group of drawer.groups) {
         for (const item of group.items) {
-          rows.push([drawer.id, drawer.name, drawer.description, group.name, item.id, item.name]);
+          rows.push([drawer.id, drawer.name, drawer.description || "", group.name, item.id, item.name]);
         }
       }
     }
@@ -189,7 +338,6 @@
       return null;
     }
 
-    // Parse CSV rows (handle quoted fields)
     function parseLine(line) {
       const result = [];
       let current = "";
@@ -200,9 +348,7 @@
           if (ch === '"') {
             if (i + 1 < line.length && line[i + 1] === '"') { current += '"'; i++; }
             else inQuotes = false;
-          } else {
-            current += ch;
-          }
+          } else current += ch;
         } else {
           if (ch === '"') inQuotes = true;
           else if (ch === ",") { result.push(current.trim()); current = ""; }
@@ -214,7 +360,6 @@
     }
 
     const header = parseLine(lines[0]).map(h => h.toLowerCase());
-    // Expected columns: drawer, drawer name, description, group, item id, item name
     const colDrawer = header.findIndex(h => h === "drawer");
     const colDrawerName = header.findIndex(h => h.includes("drawer") && h.includes("name"));
     const colDesc = header.findIndex(h => h.includes("desc"));
@@ -223,11 +368,10 @@
     const colItemName = header.findIndex(h => h.includes("item") && h.includes("name"));
 
     if (colDrawer < 0 || colGroup < 0 || colItemId < 0 || colItemName < 0) {
-      alert("CSV must have columns: Drawer, Group, Item ID, Item Name. Optional: Drawer Name, Description.");
+      alert("CSV must have columns: Drawer, Group, Item ID, Item Name.\nOptional: Drawer Name, Description.");
       return null;
     }
 
-    // Build template structure
     const drawersMap = {};
     for (let i = 1; i < lines.length; i++) {
       const cols = parseLine(lines[i]);
@@ -252,7 +396,6 @@
       d.groupsMap[groupName].items.push({ id: itemId, name: itemName });
     }
 
-    // Convert to template
     const drawers = Object.values(drawersMap)
       .sort((a, b) => a.id - b.id)
       .map(d => ({
@@ -267,7 +410,6 @@
       return null;
     }
 
-    // Use existing template's name/trolley if available
     const existing = getEffectiveTemplate(selectedTemplateId);
     return {
       name: existing ? existing.name : selectedTemplateId,
@@ -279,6 +421,94 @@
   // ---- Validation ----
   function validateTemplate(data) {
     if (!data || !data.name || !Array.isArray(data.drawers)) return false;
+    for (const drawer of data.drawers) {
+      if (drawer.id == null || !Array.isArray(drawer.groups)) return false;
+      for (const group of drawer.groups) {
+        if (!group.name || !Array.isArray(group.items)) return false;
+        for (const item of group.items) {
+          if (!item.id || !item.name) return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  // ---- Preview ----
+  function showPreview(tpl) {
+    const totalItems = getTotalItemCount(tpl);
+    const current = getEffectiveTemplate(selectedTemplateId);
+    const currentCount = current ? getTotalItemCount(current) : 0;
+    const diff = totalItems - currentCount;
+    const diffText = diff === 0 ? "same count" : (diff > 0 ? `+${diff} items` : `${diff} items`);
+
+    document.getElementById("preview-summary").innerHTML = `
+      <p><strong>${tpl.name || selectedTemplateId}</strong> — ${tpl.drawers.length} drawers, ${totalItems} items (${diffText} vs current)</p>
+    `;
+
+    let html = `<table class="data-table" style="font-size: 13px;"><thead><tr><th>Drawer</th><th>Group</th><th>Item ID</th><th>Item Name</th></tr></thead><tbody>`;
+    let rowCount = 0;
+    for (const drawer of tpl.drawers) {
+      for (const group of drawer.groups) {
+        for (const item of group.items) {
+          if (rowCount < 50) {
+            html += `<tr><td>${drawer.name}</td><td>${group.name}</td><td>${item.id}</td><td>${item.name}</td></tr>`;
+          }
+          rowCount++;
+        }
+      }
+    }
+    if (rowCount > 50) {
+      html += `<tr><td colspan="4" style="text-align:center; color: var(--vestas-gray);">... and ${rowCount - 50} more items</td></tr>`;
+    }
+    html += `</tbody></table>`;
+    document.getElementById("preview-table-wrap").innerHTML = html;
+
+    importPreview.style.display = "";
+  }
+
+  // ---- Confirm / Cancel Import ----
+  function confirmImport() {
+    if (!pendingImport || !selectedTemplateId) return;
+    saveCustomTemplate(selectedTemplateId, pendingImport);
+    pendingImport = null;
+    importPreview.style.display = "none";
+    populateTemplateSelect();
+    templateSelect.value = selectedTemplateId;
+    onTemplateChange();
+    showToast("Template updated successfully!");
+  }
+
+  function cancelImport() {
+    pendingImport = null;
+    importPreview.style.display = "none";
+  }
+
+  // ---- Revert to Default ----
+  function revertToDefault() {
+    if (!selectedTemplateId) return;
+    if (!confirm(`Revert "${selectedTemplateId}" to the built-in default? Custom changes will be lost.`)) return;
+    deleteCustomTemplate(selectedTemplateId);
+    populateTemplateSelect();
+    templateSelect.value = selectedTemplateId;
+    onTemplateChange();
+    showToast("Reverted to default.");
+  }
+
+  // ---- Toast ----
+  function showToast(message) {
+    const existing = document.querySelector(".toast-msg");
+    if (existing) existing.remove();
+    const toast = document.createElement("div");
+    toast.className = "toast-msg";
+    toast.textContent = message;
+    toast.style.cssText = "position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--vestas-navy); color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.2);";
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }
+
+  // ---- Start ----
+  init();
+})();
     for (const drawer of data.drawers) {
       if (!drawer.id || !Array.isArray(drawer.groups)) return false;
       for (const group of drawer.groups) {
