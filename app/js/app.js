@@ -52,7 +52,7 @@
   function populateFarmSelect() {
     // Group farms by region
     const regions = {};
-    for (const farm of WIND_FARMS) {
+    for (const farm of getAllWindFarms()) {
       if (!regions[farm.region]) regions[farm.region] = [];
       regions[farm.region].push(farm);
     }
@@ -71,7 +71,7 @@
 
   function onFarmChange() {
     const farmId = farmSelect.value;
-    currentFarm = WIND_FARMS.find(f => f.id === farmId) || null;
+    currentFarm = getWindFarm(farmId);
 
     // Switch toolkit template based on selected farm
     activeToolkit = currentFarm ? getToolkitForFarm(currentFarm.id) : TOOLKIT_DATA;

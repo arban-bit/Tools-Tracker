@@ -79,7 +79,7 @@
 
     // Stats
     const totalItems = getTotalItemCount(tpl);
-    const farmsUsing = WIND_FARMS.filter(f => getFarmTemplateId(f.id) === selectedTemplateId);
+    const farmsUsing = getAllWindFarms().filter(f => getFarmTemplateId(f.id) === selectedTemplateId);
 
     document.getElementById("info-drawers").textContent = tpl.drawers.length;
     document.getElementById("info-items").textContent = totalItems;
@@ -156,7 +156,7 @@
     if (isBuiltIn) { alert("Cannot delete a built-in template. Use 'Revert to Default' instead."); return; }
 
     // Check if any farms are assigned
-    const farmsUsing = WIND_FARMS.filter(f => getFarmTemplateId(f.id) === selectedTemplateId);
+    const farmsUsing = getAllWindFarms().filter(f => getFarmTemplateId(f.id) === selectedTemplateId);
     if (farmsUsing.length > 0) {
       if (!confirm(`"${selectedTemplateId}" is used by ${farmsUsing.length} farm(s): ${farmsUsing.map(f => f.name).join(", ")}.\nThey will revert to V236_STANDARD. Continue?`)) return;
       for (const farm of farmsUsing) {
@@ -181,7 +181,7 @@
 
     // Group farms by region
     const regions = {};
-    for (const farm of WIND_FARMS) {
+    for (const farm of getAllWindFarms()) {
       if (!regions[farm.region]) regions[farm.region] = [];
       regions[farm.region].push(farm);
     }
@@ -214,7 +214,7 @@
           setFarmTemplateAssignment(farmId, null); // revert to default
         }
         // Update stats
-        const farmsUsing = WIND_FARMS.filter(f => getFarmTemplateId(f.id) === selectedTemplateId);
+        const farmsUsing = getAllWindFarms().filter(f => getFarmTemplateId(f.id) === selectedTemplateId);
         document.getElementById("info-farms").textContent = farmsUsing.length;
         document.getElementById("info-farms-list").textContent = farmsUsing.length
           ? "Used by: " + farmsUsing.map(f => f.name).join(", ")
@@ -508,4 +508,174 @@
 
   // ---- Start ----
   init();
+
+  // ==================================================================
+  // Wind Farm Management
+  // ==================================================================
+  const farmsTbody = document.getElementById("farms-tbody");
+  const farmDialog = document.getElementById("farm-dialog");
+  let editingFarmId = null; // null = new farm, string = editing
+
+  function initFarmManager() {
+    renderFarmsTable();
+    document.getElementById("btn-add-farm").addEventListener("click", () => openFarmDialog(null));
+    document.getElementById("btn-farm-save").addEventListener("click", saveFarm);
+    document.getElementById("btn-farm-cancel").addEventListener("click", closeFarmDialog);
+  }
+
+  function renderFarmsTable() {
+    const farms = getAllWindFarms();
+    let html = "";
+    for (const farm of farms) {
+      const tplId = getFarmTemplateId(farm.id);
+      const isCustom = !isBuiltInFarm(farm.id);
+      const hasOverride = isBuiltInFarm(farm.id) && !!getCustomWindFarms()[farm.id];
+      html += `<tr>
+        <td>${farm.id}${isCustom ? ' <span style="background: var(--vestas-blue); color: white; padding: 1px 6px; border-radius: 3px; font-size: 11px;">NEW</span>' : ""}${hasOverride ? ' <span style="background: #f0ad4e; color: white; padding: 1px 6px; border-radius: 3px; font-size: 11px;">EDITED</span>' : ""}</td>
+        <td>${farm.name}</td>
+        <td>${farm.country}</td>
+        <td>${farm.region}</td>
+        <td>${farm.wtgType}</td>
+        <td>${farm.turbineCount}</td>
+        <td>${farm.capacityMW}</td>
+        <td style="font-size: 12px;">${tplId}</td>
+        <td style="white-space: nowrap;">
+          <button class="btn btn-outline farm-edit-btn" data-farm="${farm.id}" style="font-size: 11px; padding: 2px 8px;">Edit</button>
+          ${isCustom ? `<button class="btn btn-outline farm-delete-btn" data-farm="${farm.id}" style="font-size: 11px; padding: 2px 8px; color: var(--vestas-red);">Del</button>` : ""}
+          ${hasOverride ? `<button class="btn btn-outline farm-revert-btn" data-farm="${farm.id}" style="font-size: 11px; padding: 2px 8px; color: #f0ad4e;">↩</button>` : ""}
+        </td>
+      </tr>`;
+    }
+    farmsTbody.innerHTML = html;
+
+    farmsTbody.querySelectorAll(".farm-edit-btn").forEach(btn =>
+      btn.addEventListener("click", () => openFarmDialog(btn.dataset.farm))
+    );
+    farmsTbody.querySelectorAll(".farm-delete-btn").forEach(btn =>
+      btn.addEventListener("click", () => removeFarm(btn.dataset.farm))
+    );
+    farmsTbody.querySelectorAll(".farm-revert-btn").forEach(btn =>
+      btn.addEventListener("click", () => revertFarm(btn.dataset.farm))
+    );
+  }
+
+  function openFarmDialog(farmId) {
+    editingFarmId = farmId;
+    const isEdit = !!farmId;
+    document.getElementById("farm-dialog-title").textContent = isEdit ? `Edit: ${farmId}` : "Add Wind Farm";
+
+    // Populate template dropdown
+    const tplSelect = document.getElementById("farm-toolkit-input");
+    tplSelect.innerHTML = "";
+    for (const id of getAllTemplateIds()) {
+      const opt = document.createElement("option");
+      opt.value = id;
+      opt.textContent = id;
+      tplSelect.appendChild(opt);
+    }
+
+    const idInput = document.getElementById("farm-id-input");
+    if (isEdit) {
+      const farm = getWindFarm(farmId);
+      idInput.value = farm.id;
+      idInput.disabled = true;
+      document.getElementById("farm-name-input").value = farm.name;
+      document.getElementById("farm-country-input").value = farm.country;
+      document.getElementById("farm-region-input").value = farm.region;
+      document.getElementById("farm-wtgtype-input").value = farm.wtgType;
+      document.getElementById("farm-capacity-input").value = farm.capacityMW;
+      document.getElementById("farm-turbines-input").value = farm.turbineCount;
+      document.getElementById("farm-toolkit-input").value = getFarmTemplateId(farmId);
+      document.getElementById("farm-scd-input").value = farm.scd || "";
+      document.getElementById("farm-sp-input").value = farm.spNumber || "";
+      document.getElementById("farm-manager-input").value = farm.serviceManager || "";
+    } else {
+      idInput.value = "";
+      idInput.disabled = false;
+      document.getElementById("farm-name-input").value = "";
+      document.getElementById("farm-country-input").value = "";
+      document.getElementById("farm-region-input").value = "NCE";
+      document.getElementById("farm-wtgtype-input").value = "V236 Mk0A";
+      document.getElementById("farm-capacity-input").value = "";
+      document.getElementById("farm-turbines-input").value = "";
+      document.getElementById("farm-toolkit-input").value = "V236_STANDARD";
+      document.getElementById("farm-scd-input").value = "";
+      document.getElementById("farm-sp-input").value = "";
+      document.getElementById("farm-manager-input").value = "";
+    }
+
+    farmDialog.style.display = "";
+    if (!isEdit) idInput.focus();
+  }
+
+  function closeFarmDialog() {
+    farmDialog.style.display = "none";
+    editingFarmId = null;
+  }
+
+  function saveFarm() {
+    const id = editingFarmId || document.getElementById("farm-id-input").value.trim().toUpperCase().replace(/\s+/g, "-");
+    const name = document.getElementById("farm-name-input").value.trim();
+    const country = document.getElementById("farm-country-input").value.trim();
+    const region = document.getElementById("farm-region-input").value;
+    const wtgType = document.getElementById("farm-wtgtype-input").value.trim();
+    const capacityMW = parseFloat(document.getElementById("farm-capacity-input").value) || 0;
+    const turbineCount = parseInt(document.getElementById("farm-turbines-input").value, 10) || 0;
+    const toolkit = document.getElementById("farm-toolkit-input").value || "V236_STANDARD";
+    const scd = document.getElementById("farm-scd-input").value;
+    const spNumber = document.getElementById("farm-sp-input").value.trim();
+    const serviceManager = document.getElementById("farm-manager-input").value.trim();
+
+    if (!id) { alert("Farm ID is required."); return; }
+    if (!name) { alert("Farm Name is required."); return; }
+    if (!country) { alert("Country is required."); return; }
+    if (turbineCount < 1) { alert("Turbine count must be at least 1."); return; }
+    if (!/^[A-Z0-9-]+$/.test(id)) { alert("Farm ID can only contain uppercase letters, numbers and hyphens."); return; }
+
+    // Prevent duplicate ID when adding new
+    if (!editingFarmId && getWindFarm(id)) {
+      alert(`Farm "${id}" already exists. Choose a different ID.`);
+      return;
+    }
+
+    const farm = { id, name, country, region, wtgType, capacityMW, turbineCount, toolkit, scd, spNumber, serviceManager };
+
+    // For built-in farms, only persist a custom override if something actually differs.
+    if (isBuiltInFarm(id)) {
+      const builtIn = WIND_FARMS.find(f => f.id === id);
+      const isUnchanged = builtIn && Object.keys(farm).every(k => (farm[k] || "") === (builtIn[k] || ""));
+      if (isUnchanged) {
+        deleteCustomWindFarm(id);
+      } else {
+        saveCustomWindFarm(farm);
+      }
+    } else {
+      saveCustomWindFarm(farm);
+    }
+
+    // farm.toolkit is now the source of truth - clear any stale override from the
+    // checkbox-based assignment UI so the two stay in sync.
+    setFarmTemplateAssignment(id, null);
+
+    closeFarmDialog();
+    renderFarmsTable();
+    showToast(editingFarmId ? `Farm "${id}" updated.` : `Farm "${id}" added.`);
+  }
+
+  function removeFarm(farmId) {
+    if (!confirm(`Delete wind farm "${farmId}"? This cannot be undone.`)) return;
+    deleteCustomWindFarm(farmId);
+    setFarmTemplateAssignment(farmId, null);
+    renderFarmsTable();
+    showToast(`Farm "${farmId}" deleted.`);
+  }
+
+  function revertFarm(farmId) {
+    if (!confirm(`Revert "${farmId}" to built-in defaults?`)) return;
+    deleteCustomWindFarm(farmId);
+    renderFarmsTable();
+    showToast(`Farm "${farmId}" reverted to default.`);
+  }
+
+  initFarmManager();
 })();

@@ -73,7 +73,7 @@
 
       // Populate farm dropdown grouped by region
       const regions = {};
-      for (const farm of WIND_FARMS) {
+      for (const farm of getAllWindFarms()) {
         if (!regions[farm.region]) regions[farm.region] = [];
         regions[farm.region].push(farm);
       }
@@ -93,8 +93,9 @@
       btnPrint.addEventListener("click", () => window.print());
 
       // Auto-generate first farm on load
-      if (WIND_FARMS.length > 0) {
-        farmSelectQr.value = WIND_FARMS[0].id;
+      const allFarms = getAllWindFarms();
+      if (allFarms.length > 0) {
+        farmSelectQr.value = allFarms[0].id;
       }
       generateCodes();
 
@@ -105,8 +106,8 @@
 
         // Determine which farms to generate
         const farms = selectedFarmId
-          ? [WIND_FARMS.find(f => f.id === selectedFarmId)]
-          : WIND_FARMS;
+          ? [getWindFarm(selectedFarmId)]
+          : getAllWindFarms();
 
         for (const farm of farms) {
           if (!farm) continue;

@@ -32,7 +32,7 @@
 
   function populateFarmFilter() {
     const regions = {};
-    for (const farm of WIND_FARMS) {
+    for (const farm of getAllWindFarms()) {
       if (!regions[farm.region]) regions[farm.region] = [];
       regions[farm.region].push(farm);
     }
@@ -55,7 +55,7 @@
     // Update subtitle
     const subtitle = document.getElementById("dashboard-subtitle");
     if (farmId) {
-      const farm = WIND_FARMS.find(f => f.id === farmId);
+      const farm = getWindFarm(farmId);
       subtitle.textContent = farm ? `${farm.name} — ${farm.country}` : "All Wind Farms";
     } else {
       subtitle.textContent = "V236 Toolkit Tracker — All Wind Farms";
