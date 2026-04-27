@@ -1098,6 +1098,42 @@ tr:hover td {
   gap: 16px;
 }
 
+.landing-tiles .tile-primary {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  gap: 24px;
+  min-height: 0;
+  padding: 28px 32px;
+}
+
+.landing-tiles .tile-primary .tile-icon {
+  font-size: 56px;
+  margin-bottom: 0;
+}
+
+.landing-tiles .tile-primary .tile-body {
+  flex: 1;
+}
+
+.landing-tiles .tile-primary .tile-cta {
+  margin-top: 0;
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .landing-tiles .tile-primary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 24px 20px;
+  }
+  .landing-tiles .tile-primary .tile-icon {
+    font-size: 40px;
+  }
+}
+
 .tile {
   display: flex;
   flex-direction: column;
