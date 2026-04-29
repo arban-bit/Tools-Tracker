@@ -97,6 +97,16 @@
       <div class="drawer-content" id="drawer-content"></div>
     </div>
 
+    <!-- Selected Items Panel (collapsible quick-check confirmation) -->
+    <div class="selected-panel" id="selected-panel">
+      <button type="button" class="selected-panel-toggle" id="selected-panel-toggle" aria-expanded="false">
+        <span class="sp-caret">▸</span>
+        <span class="sp-title">Selected items</span>
+        <span class="sp-count" id="selected-panel-count">0</span>
+      </button>
+      <div class="selected-panel-body" id="selected-panel-body" hidden></div>
+    </div>
+
     <!-- Bottom Summary Bar -->
     <div class="summary-bar">
       <div class="summary-stats">
@@ -164,6 +174,7 @@
 
   <script src="js/toolkit-data.js"></script>
   <script src="js/storage.js"></script>
+  <script src="js/drawer-visual.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

@@ -10,6 +10,7 @@
   let technicianName = "";
   let currentDrawer = 1;
   let activeToolkit = TOOLKIT_DATA; // switches per farm
+  let viewMode = "list"; // "visual" or "list" — auto-switches to "visual" when drawer has a photo
   const itemStatus = {};
 
   // ---- URL Params (from QR code) ----
@@ -119,6 +120,19 @@
     document.getElementById("btn-new-check").addEventListener("click", resetApp);
     const btnCancel = document.getElementById("btn-cancel-check");
     if (btnCancel) btnCancel.addEventListener("click", cancelChecklist);
+
+    // Selected-items panel toggle
+    const spToggle = document.getElementById("selected-panel-toggle");
+    if (spToggle) {
+      spToggle.addEventListener("click", () => {
+        const body = document.getElementById("selected-panel-body");
+        const caret = spToggle.querySelector(".sp-caret");
+        const expanded = spToggle.getAttribute("aria-expanded") === "true";
+        spToggle.setAttribute("aria-expanded", String(!expanded));
+        body.hidden = expanded;
+        if (caret) caret.textContent = expanded ? "▸" : "▾";
+      });
+    }
   }
 
   function cancelChecklist() {
@@ -191,11 +205,31 @@
     const drawer = activeToolkit.drawers.find(d => d.id === drawerId);
     if (!drawer) return;
 
+    const visualAvailable = typeof DrawerVisual !== "undefined" && DrawerVisual.hasVisual(drawer);
+
+    // Auto-switch to visual the first time we land on a drawer that has a photo,
+    // unless the user has explicitly chosen list mode for this session.
+    if (visualAvailable && viewMode === "list" && !window.__userPickedView) {
+      viewMode = "visual";
+    }
+    if (!visualAvailable && viewMode === "visual") {
+      viewMode = "list";
+    }
+
+    const visualBtnAttrs = visualAvailable ? "" : "disabled";
+    const visualBtnTitle = visualAvailable ? "Photo view" : "No photo for this drawer";
+
     let html = `
       <div class="fade-in">
-        <div style="padding: 12px 0 4px;">
-          <h2 style="font-size: 18px; color: var(--vestas-navy);">${drawer.name}</h2>
-          <p style="font-size: 13px; color: var(--vestas-gray); margin-top: 2px;">${drawer.description}</p>
+        <div class="drawer-header-row">
+          <div>
+            <h2 style="font-size: 18px; color: var(--vestas-navy);">${drawer.name}</h2>
+            <p style="font-size: 13px; color: var(--vestas-gray); margin-top: 2px;">${drawer.description}</p>
+          </div>
+          <div class="view-toggle" role="tablist" aria-label="View mode">
+            <button data-view="visual" class="${viewMode === "visual" ? "active" : ""}" ${visualBtnAttrs} title="${visualBtnTitle}">📷 Photo</button>
+            <button data-view="list" class="${viewMode === "list" ? "active" : ""}" title="List view">📋 List</button>
+          </div>
         </div>
 
         <div class="toggle-all-row">
@@ -205,8 +239,38 @@
             <button onclick="markAllDrawer(${drawerId}, false)">✕ All Missing</button>
           </div>
         </div>
+        <div id="drawer-body"></div>
+      </div>
     `;
 
+    drawerContent.innerHTML = html;
+
+    // Bind view-toggle buttons
+    drawerContent.querySelectorAll(".view-toggle button[data-view]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (btn.disabled) return;
+        viewMode = btn.dataset.view;
+        window.__userPickedView = true;
+        renderDrawerContent(currentDrawer);
+      });
+    });
+
+    const body = drawerContent.querySelector("#drawer-body");
+
+    if (viewMode === "visual" && visualAvailable) {
+      DrawerVisual.render(
+        body,
+        drawer,
+        id => !!itemStatus[id],
+        id => window.toggleItem(id)
+      );
+    } else {
+      renderListView(body, drawer);
+    }
+  }
+
+  function renderListView(container, drawer) {
+    let html = "";
     for (const group of drawer.groups) {
       const presentCount = group.items.filter(i => itemStatus[i.id]).length;
       html += `
@@ -230,9 +294,7 @@
 
       html += `</div>`;
     }
-
-    html += `</div>`;
-    drawerContent.innerHTML = html;
+    container.innerHTML = html;
   }
 
   // ---- Toggle Item ----
@@ -278,6 +340,53 @@
     document.getElementById("stat-present").textContent = present;
     document.getElementById("stat-missing").textContent = missing;
     document.getElementById("stat-total").textContent = total;
+
+    renderSelectedPanel();
+  }
+
+  // ---- Selected Items Panel ----
+  function renderSelectedPanel() {
+    const body = document.getElementById("selected-panel-body");
+    const countEl = document.getElementById("selected-panel-count");
+    if (!body || !countEl || !activeToolkit) return;
+
+    let total = 0;
+    let html = "";
+    for (const drawer of activeToolkit.drawers) {
+      const present = [];
+      for (const group of drawer.groups) {
+        for (const item of group.items) {
+          if (itemStatus[item.id]) present.push(item);
+        }
+      }
+      if (present.length === 0) continue;
+      total += present.length;
+      html +=
+        '<div class="sp-drawer">' +
+          '<div class="sp-drawer-head">' +
+            '<span>' + escapeHtml(drawer.name) + '</span>' +
+            '<span class="sp-drawer-count">' + present.length + '</span>' +
+          '</div>' +
+          '<ul class="sp-list">' +
+            present.map(it =>
+              '<li><span class="sp-check">✓</span><span class="sp-name">' + escapeHtml(it.name) + '</span><span class="sp-id">' + escapeHtml(it.id) + '</span></li>'
+            ).join("") +
+          '</ul>' +
+        '</div>';
+    }
+
+    countEl.textContent = total;
+    if (total === 0) {
+      body.innerHTML = '<div class="sp-empty">No items selected yet. Tap a tool above to mark it present.</div>';
+    } else {
+      body.innerHTML = html;
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, c =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+    );
   }
 
   // ---- Submit ----

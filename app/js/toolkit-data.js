@@ -180,6 +180,50 @@ TOOLKIT_TEMPLATES["V236_STANDARD"] = {
       id: 3,
       name: "Drawer 3",
       description: "Combination Spanners",
+      imageUrl: "img/drawers/d3.jpg",
+      // Layout: 11 small vertical spanners (6-16 mm) on the left, 12 larger horizontal
+      // spanners (17-36 mm) fanning out on the right. Coordinates are normalized 0-1
+      // and were estimated from a reference photo — fine-tune in toolkit-data.js if
+      // your photo crop differs. See app/img/drawers/README.md for guidance.
+      hotspots: (function () {
+        const out = [];
+
+        // ----- LEFT zone: 11 vertical spanners (6 mm to 16 mm) -----
+        const leftCount = 11;
+        const leftX = 0.045;
+        const leftW = 0.255;
+        const leftYStart = 0.30;
+        const leftYEnd = 0.95;
+        const leftStep = (leftYEnd - leftYStart) / leftCount;
+        for (let i = 0; i < leftCount; i++) {
+          out.push({
+            itemId: "d3-" + String(i + 1).padStart(3, "0"),
+            x: leftX,
+            y: +(leftYStart + i * leftStep).toFixed(4),
+            w: leftW,
+            h: +(leftStep * 0.85).toFixed(4)
+          });
+        }
+
+        // ----- RIGHT zone: 12 horizontal spanners (17 mm to 36 mm) -----
+        const rightCount = 12;
+        const rightX = 0.30;
+        const rightW = 0.66;
+        const rightYStart = 0.10;
+        const rightYEnd = 0.86;
+        const rightStep = (rightYEnd - rightYStart) / rightCount;
+        for (let i = 0; i < rightCount; i++) {
+          out.push({
+            itemId: "d3-" + String(leftCount + i + 1).padStart(3, "0"),
+            x: rightX,
+            y: +(rightYStart + i * rightStep).toFixed(4),
+            w: rightW,
+            h: +(rightStep * 0.85).toFixed(4)
+          });
+        }
+
+        return out;
+      })(),
       groups: [
         {
           name: "Combination Spanners",
@@ -636,6 +680,26 @@ function deleteCustomTemplate(templateId) {
 
 function getEffectiveTemplate(templateId) {
   return getCustomTemplate(templateId) || TOOLKIT_TEMPLATES[templateId] || null;
+}
+
+// Returns the image URL to use for a drawer:
+// - explicit drawer.imageUrl (data URL or path) takes priority
+// - otherwise convention path: img/drawers/d{id}.jpg
+function effectiveDrawerImagePath(drawer) {
+  if (!drawer) return null;
+  if (drawer.imageUrl) return drawer.imageUrl;
+  return "img/drawers/d" + drawer.id + ".jpg";
+}
+
+// Async-probe whether an image URL actually loads. Returns Promise<boolean>.
+function probeImage(url) {
+  return new Promise(function (resolve) {
+    if (!url) { resolve(false); return; }
+    const img = new Image();
+    img.onload = function () { resolve(true); };
+    img.onerror = function () { resolve(false); };
+    img.src = url;
+  });
 }
 
 // Get list of all known template IDs (built-in + custom)
