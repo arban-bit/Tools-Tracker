@@ -95,24 +95,60 @@ const DrawerVisual = (function () {
     }
 
     const url = imagePath(drawer);
+
+    // Build "selected so far" list for THIS drawer
+    const selected = [];
+    for (const g of drawer.groups || []) {
+      for (const it of g.items || []) {
+        if (getStatus(it.id)) selected.push(it);
+      }
+    }
+
+    let selectedListHtml =
+      '<aside class="dv-selected" aria-label="Selected items">' +
+        '<div class="dv-selected-header">' +
+          '<span class="dv-selected-title">Selected</span>' +
+          '<span class="dv-selected-count">' + selected.length + '</span>' +
+        '</div>' +
+        '<div class="dv-selected-body">';
+    if (selected.length === 0) {
+      selectedListHtml +=
+        '<div class="dv-selected-empty">Tap an item on the photo. It will appear here.</div>';
+    } else {
+      selectedListHtml += '<ul class="dv-selected-list">';
+      for (const it of selected) {
+        selectedListHtml +=
+          '<li class="dv-selected-item" data-item="' + esc(it.id) + '" title="Click to unmark">' +
+            '<span class="dv-selected-check">✓</span>' +
+            '<span class="dv-selected-name">' + esc(it.name) + '</span>' +
+            '<span class="dv-selected-id">' + esc(it.id) + '</span>' +
+          '</li>';
+      }
+      selectedListHtml += '</ul>';
+    }
+    selectedListHtml += '</div></aside>';
+
     container.innerHTML =
       '<div class="drawer-visual">' +
+      '<div class="dv-main">' +
       '<div class="dv-frame">' +
       '<img src="' + esc(url) + '" alt="' + esc(drawer.name) + '" class="dv-img"' +
       ' onerror="this.parentNode.innerHTML=\'<div class=\\\'dv-error\\\'>Photo not found at ' +
       esc(url) + '</div>\'">' +
       '<div class="dv-overlay">' + hotspotsHtml + '</div>' +
       '</div>' +
+      selectedListHtml +
+      '</div>' +
       unmappedHtml +
       '</div>';
 
-    // Bind clicks
+    // Bind clicks (hotspots, fallback list, AND selected list to allow un-selecting)
     const handler = function (e) {
       const btn = e.currentTarget;
       const id = btn.dataset.item;
       if (id && typeof onToggle === "function") onToggle(id);
     };
-    container.querySelectorAll(".dv-hotspot, .dv-unmapped-item").forEach(function (btn) {
+    container.querySelectorAll(".dv-hotspot, .dv-unmapped-item, .dv-selected-item").forEach(function (btn) {
       btn.addEventListener("click", handler);
     });
   }
