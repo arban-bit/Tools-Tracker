@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toolkit Manager - Vestas V236</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-top">
+      <div class="header-logo">
+        <img src="img/vestas-logo.jpg" alt="Vestas" class="logo-icon">
+        <div>
+          <h1>Toolkit Manager</h1>
+          <div class="subtitle">Edit toolkit templates per wind farm</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="nav-links">
+    <a href="index.html">Toolkit Checker</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="qr-codes.html">QR Codes</a>
+    <a href="toolkit-manager.html" class="active">Toolkit Manager</a>
+  </nav>
+
+  <div class="container" style="padding-bottom: 40px;">
+
+    <!-- How it works -->
+    <div class="card" style="background: #f0f8ff; border-left: 4px solid var(--vestas-blue);">
+      <div class="card-body" style="padding: 16px 20px;">
+        <strong style="color: var(--vestas-navy);">How to set up your site's toolkit:</strong>
+        <ol style="margin: 8px 0 0 16px; font-size: 14px; color: var(--vestas-gray); line-height: 1.7;">
+          <li><strong>Select</strong> the V236 Standard template below</li>
+          <li><strong>Export as CSV</strong> — opens in Excel</li>
+          <li><strong>Edit</strong> the file: add, remove, or rename tools to match your site</li>
+          <li><strong>Create a new template</strong> (+ New Template), then <strong>import your CSV</strong></li>
+          <li><strong>Assign</strong> your wind farm to the new template</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Create / Select Template -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Toolkit Templates</h2>
+      </div>
+      <div class="card-body">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: end;">
+          <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+            <label for="template-select">Select Template</label>
+            <select id="template-select">
+              <option value="">— Select a template —</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" id="btn-create-new" style="white-space: nowrap;">+ New Template</button>
+          <button class="btn btn-outline" id="btn-clone" style="white-space: nowrap;" disabled>⧉ Clone Selected</button>
+        </div>
+
+        <!-- Create / Clone dialog (hidden by default) -->
+        <div id="create-dialog" style="display: none; margin-top: 16px; padding: 16px; border: 1px solid var(--vestas-light-blue); border-radius: 8px; background: #f0f8ff;">
+          <h3 id="create-dialog-title" style="margin-bottom: 12px;">Create New Template</h3>
+          <div class="form-group">
+            <label for="new-template-id">Template ID</label>
+            <input type="text" id="new-template-id" placeholder="e.g. V236_COLD_CLIMATE">
+            <small style="color: var(--vestas-gray); display: block; margin-top: 4px;">Use UPPERCASE with underscores, no spaces.</small>
+          </div>
+          <div class="form-group">
+            <label for="new-template-name">Display Name</label>
+            <input type="text" id="new-template-name" placeholder="e.g. V236 Cold Climate Toolkit">
+          </div>
+          <div class="form-group">
+            <label for="new-template-trolley">Trolley / Cabinet</label>
+            <input type="text" id="new-template-trolley" placeholder="e.g. Bato Trolley" value="Bato Trolley">
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-primary" id="btn-create-confirm">Create</button>
+            <button class="btn btn-outline" id="btn-create-cancel">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Template info (shown when a template is selected) -->
+        <div id="template-info" style="display: none; margin-top: 16px;">
+          <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="stat-card">
+              <div class="stat-value" id="info-drawers">0</div>
+              <div class="stat-label">Drawers</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="info-items">0</div>
+              <div class="stat-label">Items</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="info-farms">0</div>
+              <div class="stat-label">Farms Using</div>
+            </div>
+          </div>
+          <div id="info-farms-list" style="margin-top: 8px; font-size: 13px; color: var(--vestas-gray);"></div>
+          <div id="info-custom-badge" style="margin-top: 8px; display: none;">
+            <span style="background: var(--vestas-blue); color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px;">CUSTOM</span>
+            <button class="btn btn-outline" id="btn-revert" style="margin-left: 8px; font-size: 12px; padding: 4px 12px;">↩ Revert to Default</button>
+            <button class="btn btn-outline" id="btn-delete-template" style="margin-left: 4px; font-size: 12px; padding: 4px 12px; color: var(--vestas-red);">🗑 Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Farm Assignment -->
+    <div class="card" id="assign-card" style="display: none;">
+      <div class="card-header">
+        <h2>Assign Template to Farms</h2>
+      </div>
+      <div class="card-body">
+        <p style="font-size: 13px; color: var(--vestas-gray); margin-bottom: 12px;">
+          Select which wind farms should use this template. Unassigned farms use V236_STANDARD by default.
+        </p>
+        <div id="farm-assignments"></div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card" id="actions-card" style="display: none;">
+      <div class="card-header">
+        <h2>Import / Export</h2>
+      </div>
+      <div class="card-body">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <button class="btn btn-primary" id="btn-export-json">📥 Export JSON</button>
+          <button class="btn btn-primary" id="btn-export-csv">📥 Export CSV</button>
+          <label class="btn btn-outline" style="cursor: pointer;">
+            📤 Import JSON
+            <input type="file" id="import-json" accept=".json" style="display: none;">
+          </label>
+          <label class="btn btn-outline" style="cursor: pointer;">
+            📤 Import CSV
+            <input type="file" id="import-csv" accept=".csv" style="display: none;">
+          </label>
+        </div>
+
+        <div id="import-preview" style="display: none; margin-top: 16px;">
+          <div class="card-header"><h3>Import Preview</h3></div>
+          <div id="preview-summary" style="margin: 12px 0;"></div>
+          <div id="preview-table-wrap" style="max-height: 400px; overflow-y: auto;"></div>
+          <div style="margin-top: 12px; display: flex; gap: 8px;">
+            <button class="btn btn-primary" id="btn-confirm-import">✓ Apply to Template</button>
+            <button class="btn btn-outline" id="btn-cancel-import">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Current Template Contents -->
+    <div class="card" id="contents-card" style="display: none;">
+      <div class="card-header">
+        <h2>Template Contents</h2>
+      </div>
+      <div class="card-body" id="template-contents"></div>
+    </div>
+
+  </div>
+
+  <script src="js/toolkit-data.js"></script>
+  <script src="js/toolkit-manager.js"></script>
+</body>
+</html>

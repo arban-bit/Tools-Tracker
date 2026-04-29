@@ -1,7 +1,15 @@
 // V236 Nacelle Toolkit - Complete Inventory Data
 // Source: V236 Nacelle Toolkit.xlsx
 
-const TOOLKIT_DATA = {
+// =========================================================
+// Toolkit Templates — each wind farm references a template ID.
+// To add a new variant: copy a template, give it a new key,
+// edit the drawers/items, and assign the key to the farm(s).
+// =========================================================
+
+const TOOLKIT_TEMPLATES = {};
+
+TOOLKIT_TEMPLATES["V236_STANDARD"] = {
   name: "V236 Nacelle Toolkit",
   trolley: "Bato Trolley",
   drawers: [
@@ -364,6 +372,9 @@ const TOOLKIT_DATA = {
   ]
 };
 
+// Backward-compatible alias (used by pages that don't pick a farm)
+const TOOLKIT_DATA = TOOLKIT_TEMPLATES["V236_STANDARD"];
+
 // =========================================================
 // Wind Farms Configuration — Source: SGM Sources SharePoint List
 // =========================================================
@@ -377,6 +388,7 @@ const WIND_FARMS = [
     turbineCount: 54,
     capacityMW: 810,
     wtgType: "V236 Mk0A",
+    toolkit: "V236_STANDARD",
     scd: "2026-09-01",
     spNumber: "61793",
     serviceManager: "Steven Gould"
@@ -390,6 +402,7 @@ const WIND_FARMS = [
     turbineCount: 31,
     capacityMW: 295,
     wtgType: "V174 Mk3A",
+    toolkit: "V236_STANDARD",
     scd: "2025-04-11",
     spNumber: "60987",
     serviceManager: "Mark Challinor"
@@ -402,6 +415,7 @@ const WIND_FARMS = [
     turbineCount: 33,
     capacityMW: 495,
     wtgType: "V236 Mk0A",
+    toolkit: "V236_STANDARD",
     scd: "2027-09-07",
     spNumber: "61791",
     serviceManager: "Mark Challinor"
@@ -414,6 +428,7 @@ const WIND_FARMS = [
     turbineCount: 21,
     capacityMW: 315,
     wtgType: "V236 Mk0A",
+    toolkit: "V236_STANDARD",
     scd: "2028-06-30",
     spNumber: "67067",
     serviceManager: "Mark Challinor"
@@ -427,6 +442,7 @@ const WIND_FARMS = [
     turbineCount: 76,
     capacityMW: 1140,
     wtgType: "V236 Mk0A",
+    toolkit: "V236_STANDARD",
     scd: "2026-03-14",
     spNumber: "61545",
     serviceManager: "Daria Jeziorna"
@@ -439,6 +455,7 @@ const WIND_FARMS = [
     turbineCount: 44,
     capacityMW: 660,
     wtgType: "V236 Mk0A",
+    toolkit: "V236_STANDARD",
     scd: "2026-07-13",
     spNumber: "62783",
     serviceManager: "Henrik Lehmkuhl"
@@ -451,6 +468,7 @@ const WIND_FARMS = [
     turbineCount: 64,
     capacityMW: 960,
     wtgType: "V236 Mk0A",
+    toolkit: "V236_STANDARD",
     scd: "2025-09-17",
     spNumber: "60423",
     serviceManager: "Sebastian Mügge"
@@ -463,6 +481,7 @@ const WIND_FARMS = [
     turbineCount: 72,
     capacityMW: 1080,
     wtgType: "V236 Mk0A",
+    toolkit: "V236_STANDARD",
     scd: "2026-11-29",
     spNumber: "65087",
     serviceManager: "Kenneth Robertson"
@@ -475,6 +494,7 @@ const WIND_FARMS = [
     turbineCount: 53,
     capacityMW: 795,
     wtgType: "V236 Mk0A",
+    toolkit: "V236_STANDARD",
     scd: "2027-03-28",
     spNumber: "66273",
     serviceManager: "Klejda Hoxha"
@@ -487,6 +507,7 @@ const WIND_FARMS = [
     turbineCount: 68,
     capacityMW: 1020,
     wtgType: "V236 Mk0A",
+    toolkit: "V236_STANDARD",
     scd: "2027-07-19",
     spNumber: "64340",
     serviceManager: "Jochen Holling"
@@ -499,6 +520,7 @@ const WIND_FARMS = [
     turbineCount: 52,
     capacityMW: 780,
     wtgType: "V236 Mk0A",
+    toolkit: "V236_STANDARD",
     scd: "2026-06-03",
     spNumber: "65456",
     serviceManager: "Niels Alexandre Visser"
@@ -511,6 +533,7 @@ const WIND_FARMS = [
     turbineCount: 50,
     capacityMW: 475,
     wtgType: "V174 Mk3A",
+    toolkit: "V236_STANDARD",
     scd: "2024-04-10",
     spNumber: "60920",
     serviceManager: ""
@@ -533,10 +556,80 @@ function getTurbineListForFarm(farmId) {
 // Legacy compat: default TURBINE_LIST (used if no farm selected)
 const TURBINE_LIST = getTurbineListForFarm("BALTIC-POWER");
 
-// Helper: get total item count
-function getTotalItemCount() {
+// Resolve the toolkit template for a given farm
+// Custom assignments + custom templates take priority over built-in ones
+function getToolkitForFarm(farmId) {
+  const farm = WIND_FARMS.find(f => f.id === farmId);
+  if (!farm) return TOOLKIT_TEMPLATES["V236_STANDARD"];
+  const assignedId = getFarmTemplateAssignment(farmId) || farm.toolkit;
+  return getEffectiveTemplate(assignedId) || TOOLKIT_TEMPLATES["V236_STANDARD"];
+}
+
+// Resolve which template ID a farm is using (custom assignment or default)
+function getFarmTemplateId(farmId) {
+  return getFarmTemplateAssignment(farmId) || (WIND_FARMS.find(f => f.id === farmId) || {}).toolkit || "V236_STANDARD";
+}
+
+// ---- Custom Template Storage (localStorage, future: SharePoint) ----
+
+function getCustomTemplates() {
+  const data = localStorage.getItem("toolkit-custom-templates");
+  return data ? JSON.parse(data) : {};
+}
+
+function getCustomTemplate(templateId) {
+  return getCustomTemplates()[templateId] || null;
+}
+
+function saveCustomTemplate(templateId, template) {
+  const all = getCustomTemplates();
+  all[templateId] = template;
+  localStorage.setItem("toolkit-custom-templates", JSON.stringify(all));
+}
+
+function deleteCustomTemplate(templateId) {
+  const all = getCustomTemplates();
+  delete all[templateId];
+  localStorage.setItem("toolkit-custom-templates", JSON.stringify(all));
+}
+
+function getEffectiveTemplate(templateId) {
+  return getCustomTemplate(templateId) || TOOLKIT_TEMPLATES[templateId] || null;
+}
+
+// Get list of all known template IDs (built-in + custom)
+function getAllTemplateIds() {
+  const builtIn = Object.keys(TOOLKIT_TEMPLATES);
+  const custom = Object.keys(getCustomTemplates());
+  return [...new Set([...builtIn, ...custom])];
+}
+
+// ---- Farm-to-Template Assignment (localStorage, future: SharePoint) ----
+
+function getFarmTemplateAssignments() {
+  const data = localStorage.getItem("toolkit-farm-assignments");
+  return data ? JSON.parse(data) : {};
+}
+
+function getFarmTemplateAssignment(farmId) {
+  return getFarmTemplateAssignments()[farmId] || null;
+}
+
+function setFarmTemplateAssignment(farmId, templateId) {
+  const all = getFarmTemplateAssignments();
+  if (templateId) {
+    all[farmId] = templateId;
+  } else {
+    delete all[farmId]; // revert to default
+  }
+  localStorage.setItem("toolkit-farm-assignments", JSON.stringify(all));
+}
+
+// Helper: get total item count (optional toolkit param)
+function getTotalItemCount(toolkit) {
+  const tk = toolkit || TOOLKIT_DATA;
   let count = 0;
-  for (const drawer of TOOLKIT_DATA.drawers) {
+  for (const drawer of tk.drawers) {
     for (const group of drawer.groups) {
       count += group.items.length;
     }
@@ -544,10 +637,11 @@ function getTotalItemCount() {
   return count;
 }
 
-// Helper: get all items flat
-function getAllItems() {
+// Helper: get all items flat (optional toolkit param)
+function getAllItems(toolkit) {
+  const tk = toolkit || TOOLKIT_DATA;
   const items = [];
-  for (const drawer of TOOLKIT_DATA.drawers) {
+  for (const drawer of tk.drawers) {
     for (const group of drawer.groups) {
       for (const item of group.items) {
         items.push({ ...item, drawer: drawer.id, drawerName: drawer.name, group: group.name });

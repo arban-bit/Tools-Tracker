@@ -9,6 +9,7 @@
   let currentTurbineList = [];
   let technicianName = "";
   let currentDrawer = 1;
+  let activeToolkit = TOOLKIT_DATA; // switches per farm
   const itemStatus = {};
 
   // ---- URL Params (from QR code) ----
@@ -72,6 +73,10 @@
     const farmId = farmSelect.value;
     currentFarm = WIND_FARMS.find(f => f.id === farmId) || null;
 
+    // Switch toolkit template based on selected farm
+    activeToolkit = currentFarm ? getToolkitForFarm(currentFarm.id) : TOOLKIT_DATA;
+    initAllItemsPresent();
+
     // Reset turbine select
     turbineSelect.innerHTML = '<option value="">— Select turbine —</option>';
 
@@ -93,7 +98,9 @@
   }
 
   function initAllItemsPresent() {
-    for (const drawer of TOOLKIT_DATA.drawers) {
+    // Clear previous state (needed when switching farms/toolkits)
+    for (const key of Object.keys(itemStatus)) delete itemStatus[key];
+    for (const drawer of activeToolkit.drawers) {
       for (const group of drawer.groups) {
         for (const item of group.items) {
           itemStatus[item.id] = true; // all present by default
@@ -131,7 +138,7 @@
     document.getElementById("farm-display").textContent = currentFarm.name;
     document.getElementById("tech-display").textContent = technicianName;
     document.getElementById("toolkit-display").textContent = currentTurbine.toolkitId;
-    document.getElementById("total-items-display").textContent = getTotalItemCount();
+    document.getElementById("total-items-display").textContent = getTotalItemCount(activeToolkit);
 
     // Build tabs and content
     buildDrawerTabs();
@@ -146,7 +153,7 @@
   // ---- Drawer Tabs ----
   function buildDrawerTabs() {
     drawerTabs.innerHTML = "";
-    for (const drawer of TOOLKIT_DATA.drawers) {
+    for (const drawer of activeToolkit.drawers) {
       const tab = document.createElement("button");
       tab.className = "drawer-tab" + (drawer.id === currentDrawer ? " active" : "");
       tab.dataset.drawer = drawer.id;
@@ -174,7 +181,7 @@
 
   // ---- Render Drawer Content ----
   function renderDrawerContent(drawerId) {
-    const drawer = TOOLKIT_DATA.drawers.find(d => d.id === drawerId);
+    const drawer = activeToolkit.drawers.find(d => d.id === drawerId);
     if (!drawer) return;
 
     let html = `
@@ -230,7 +237,7 @@
   };
 
   window.markAllDrawer = function (drawerId, present) {
-    const drawer = TOOLKIT_DATA.drawers.find(d => d.id === drawerId);
+    const drawer = activeToolkit.drawers.find(d => d.id === drawerId);
     if (!drawer) return;
     for (const group of drawer.groups) {
       for (const item of group.items) {
@@ -244,7 +251,7 @@
 
   // ---- Tab Badges ----
   function updateTabBadges() {
-    for (const drawer of TOOLKIT_DATA.drawers) {
+    for (const drawer of activeToolkit.drawers) {
       const total = getDrawerItemCount(drawer);
       const present = getDrawerPresentCount(drawer);
       const badge = document.getElementById(`tab-badge-${drawer.id}`);
@@ -257,7 +264,7 @@
 
   // ---- Summary ----
   function updateSummary() {
-    const total = getTotalItemCount();
+    const total = getTotalItemCount(activeToolkit);
     const present = Object.values(itemStatus).filter(v => v).length;
     const missing = total - present;
 
@@ -269,7 +276,7 @@
   // ---- Submit ----
   function showConfirmModal() {
     const missingItems = getMissingItemsList();
-    const total = getTotalItemCount();
+    const total = getTotalItemCount(activeToolkit);
     const present = Object.values(itemStatus).filter(v => v).length;
 
     let html = "";
@@ -310,8 +317,9 @@
       farmName: currentFarm.name,
       turbineId: currentTurbine.id,
       toolkitId: currentTurbine.toolkitId,
+      toolkitTemplate: currentFarm.toolkit,
       technicianName: technicianName,
-      totalItems: getTotalItemCount(),
+      totalItems: getTotalItemCount(activeToolkit),
       presentCount: Object.values(itemStatus).filter(v => v).length,
       missingItems: missingItems
     };
@@ -371,7 +379,7 @@
   // ---- Helpers ----
   function getMissingItemsList() {
     const missing = [];
-    for (const drawer of TOOLKIT_DATA.drawers) {
+    for (const drawer of activeToolkit.drawers) {
       for (const group of drawer.groups) {
         for (const item of group.items) {
           if (!itemStatus[item.id]) {
@@ -411,6 +419,7 @@
     currentTurbineList = [];
     technicianName = "";
     currentDrawer = 1;
+    activeToolkit = TOOLKIT_DATA;
     initAllItemsPresent();
 
     // Reset form
