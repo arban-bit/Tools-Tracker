@@ -181,26 +181,47 @@ TOOLKIT_TEMPLATES["V236_STANDARD"] = {
       name: "Drawer 3",
       description: "Combination Spanners",
       imageUrl: "img/drawers/d3.jpg",
-      // Demo hotspots: 23 vertical rectangles in a single horizontal row, sized for combination spanners.
-      // Adjust x/y/w/h (normalized 0-1, relative to image dimensions) to match your actual photo.
-      // See app/img/drawers/README.md for tuning guidance.
+      // Layout: 11 small vertical spanners (6-16 mm) on the left, 12 larger horizontal
+      // spanners (17-36 mm) fanning out on the right. Coordinates are normalized 0-1
+      // and were estimated from a reference photo — fine-tune in toolkit-data.js if
+      // your photo crop differs. See app/img/drawers/README.md for guidance.
       hotspots: (function () {
         const out = [];
-        const count = 23;
-        const startX = 0.015;
-        const stepX = 0.043;
-        const w = 0.034;
-        const y = 0.30;
-        const h = 0.45;
-        for (let i = 0; i < count; i++) {
+
+        // ----- LEFT zone: 11 vertical spanners (6 mm to 16 mm) -----
+        const leftCount = 11;
+        const leftX = 0.045;
+        const leftW = 0.255;
+        const leftYStart = 0.30;
+        const leftYEnd = 0.95;
+        const leftStep = (leftYEnd - leftYStart) / leftCount;
+        for (let i = 0; i < leftCount; i++) {
           out.push({
             itemId: "d3-" + String(i + 1).padStart(3, "0"),
-            x: +(startX + i * stepX).toFixed(4),
-            y: y,
-            w: w,
-            h: h
+            x: leftX,
+            y: +(leftYStart + i * leftStep).toFixed(4),
+            w: leftW,
+            h: +(leftStep * 0.85).toFixed(4)
           });
         }
+
+        // ----- RIGHT zone: 12 horizontal spanners (17 mm to 36 mm) -----
+        const rightCount = 12;
+        const rightX = 0.30;
+        const rightW = 0.66;
+        const rightYStart = 0.10;
+        const rightYEnd = 0.86;
+        const rightStep = (rightYEnd - rightYStart) / rightCount;
+        for (let i = 0; i < rightCount; i++) {
+          out.push({
+            itemId: "d3-" + String(leftCount + i + 1).padStart(3, "0"),
+            x: rightX,
+            y: +(rightYStart + i * rightStep).toFixed(4),
+            w: rightW,
+            h: +(rightStep * 0.85).toFixed(4)
+          });
+        }
+
         return out;
       })(),
       groups: [
