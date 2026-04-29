@@ -1320,14 +1320,21 @@ tr:hover td {
   background: #1a1a1a;
   overflow: auto;
   cursor: crosshair;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  text-align: center;
+  padding: 0;
+}
+
+.he-stage {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+  vertical-align: top;
 }
 
 .he-img {
   display: block;
-  max-width: 100%;
+  width: 100%;
   height: auto;
   user-select: none;
   -webkit-user-drag: none;
