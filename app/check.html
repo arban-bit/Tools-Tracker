@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Toolkit Checker - Vestas V236</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ======== LOGIN SCREEN ======== -->
+  <div id="screen-login">
+    <header class="header">
+      <div class="header-top">
+        <a href="index.html" class="header-logo header-logo-link" title="Back to home">
+          <img src="img/vestas-logo.jpg" alt="Vestas" class="logo-icon">
+          <div>
+            <h1>Toolkit Tracker</h1>
+            <div class="subtitle">V236 Offshore</div>
+          </div>
+        </a>
+      </div>
+    </header>
+
+    <div class="login-screen">
+      <div class="icon-large">🧰</div>
+      <h2>End-of-Shift Check</h2>
+      <p>Verify all tools are present in the toolkit before leaving the turbine.</p>
+
+      <div class="form-group">
+        <label for="farm-select">Wind Farm</label>
+        <select id="farm-select">
+          <option value="">— Select wind farm —</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="turbine-select">Turbine</label>
+        <select id="turbine-select" disabled>
+          <option value="">— Select turbine —</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="tech-name">Your Name / ID</label>
+        <input type="text" id="tech-name" placeholder="e.g. John D. or VES-1234" autocomplete="name">
+      </div>
+
+      <button class="btn btn-primary btn-lg btn-block" id="btn-start" disabled>
+        Start Toolkit Check
+      </button>
+
+      <a href="index.html" class="btn btn-outline btn-block" style="margin-top: 12px; text-decoration: none; text-align: center;">← Back to Home</a>
+    </div>
+  </div>
+
+  <!-- ======== CHECKLIST SCREEN ======== -->
+  <div id="screen-checklist" style="display:none;">
+    <header class="header">
+      <div class="header-top">
+        <a href="index.html" class="header-logo header-logo-link" title="Back to home">
+          <img src="img/vestas-logo.jpg" alt="Vestas" class="logo-icon">
+          <div>
+            <h1>Toolkit Tracker</h1>
+            <div class="subtitle">V236 Offshore</div>
+          </div>
+        </a>
+        <div class="header-badge" id="turbine-badge"></div>
+      </div>
+      <div class="header-info">
+        <div class="header-info-item">
+          <span class="label">Farm:</span>
+          <span class="value" id="farm-display"></span>
+        </div>
+        <div class="header-info-item">
+          <span class="label">Technician:</span>
+          <span class="value" id="tech-display"></span>
+        </div>
+        <div class="header-info-item">
+          <span class="label">Toolkit:</span>
+          <span class="value" id="toolkit-display"></span>
+        </div>
+        <div class="header-info-item">
+          <span class="label">Items:</span>
+          <span class="value" id="total-items-display"></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Drawer Tabs -->
+    <div class="drawer-tabs" id="drawer-tabs"></div>
+
+    <!-- Drawer Content -->
+    <div class="container">
+      <div class="drawer-content" id="drawer-content"></div>
+    </div>
+
+    <!-- Bottom Summary Bar -->
+    <div class="summary-bar">
+      <div class="summary-stats">
+        <div class="summary-stat">
+          <div class="stat-value green" id="stat-present">0</div>
+          <div class="stat-label">Present</div>
+        </div>
+        <div class="summary-stat">
+          <div class="stat-value red" id="stat-missing">0</div>
+          <div class="stat-label">Missing</div>
+        </div>
+        <div class="summary-stat">
+          <div class="stat-value blue" id="stat-total">0</div>
+          <div class="stat-label">Total</div>
+        </div>
+      </div>
+      <button class="btn btn-outline" id="btn-cancel-check">Cancel</button>
+      <button class="btn btn-primary" id="btn-submit">Submit Report</button>
+    </div>
+  </div>
+
+  <!-- ======== SUBMIT CONFIRMATION MODAL ======== -->
+  <div class="modal-overlay" id="modal-confirm">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Confirm Submission</h2>
+        <button class="modal-close" onclick="closeModal('modal-confirm')">&times;</button>
+      </div>
+      <div class="modal-body" id="modal-confirm-body">
+        <!-- Filled dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('modal-confirm')">Cancel</button>
+        <button class="btn btn-primary" id="btn-confirm-submit">Submit Report</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== SUCCESS SCREEN ======== -->
+  <div id="screen-success" style="display:none;">
+    <header class="header">
+      <div class="header-top">
+        <a href="index.html" class="header-logo header-logo-link" title="Back to home">
+          <img src="img/vestas-logo.jpg" alt="Vestas" class="logo-icon">
+          <div>
+            <h1>Toolkit Tracker</h1>
+            <div class="subtitle">V236 Offshore</div>
+          </div>
+        </a>
+      </div>
+    </header>
+
+    <div class="success-screen">
+      <div class="success-icon">✓</div>
+      <h2 id="success-title">Report Submitted</h2>
+      <p id="success-message"></p>
+      <div id="success-details"></div>
+      <div style="margin-top: 32px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+        <button class="btn btn-primary" id="btn-new-check">New Check</button>
+        <a href="dashboard.html" class="btn btn-outline" id="link-dashboard">Stockkeeper Dashboard</a>
+        <a href="index.html" class="btn btn-outline">Home</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/toolkit-data.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -540,9 +540,50 @@ const WIND_FARMS = [
   }
 ];
 
+// ---- Custom Wind Farm Storage (localStorage, future: SharePoint) ----
+
+const BUILTIN_FARM_IDS = WIND_FARMS.map(f => f.id);
+
+function getCustomWindFarms() {
+  const data = localStorage.getItem("toolkit-custom-farms");
+  return data ? JSON.parse(data) : {};
+}
+
+function saveCustomWindFarm(farm) {
+  const all = getCustomWindFarms();
+  all[farm.id] = farm;
+  localStorage.setItem("toolkit-custom-farms", JSON.stringify(all));
+}
+
+function deleteCustomWindFarm(farmId) {
+  const all = getCustomWindFarms();
+  delete all[farmId];
+  localStorage.setItem("toolkit-custom-farms", JSON.stringify(all));
+}
+
+function isBuiltInFarm(farmId) {
+  return BUILTIN_FARM_IDS.includes(farmId);
+}
+
+// Merge built-in + custom farms. Custom can override built-in fields or add new farms.
+function getAllWindFarms() {
+  const custom = getCustomWindFarms();
+  const merged = WIND_FARMS.map(f => custom[f.id] ? { ...f, ...custom[f.id], id: f.id } : f);
+  for (const [id, farm] of Object.entries(custom)) {
+    if (!BUILTIN_FARM_IDS.includes(id)) {
+      merged.push({ ...farm, id });
+    }
+  }
+  return merged;
+}
+
+function getWindFarm(farmId) {
+  return getAllWindFarms().find(f => f.id === farmId) || null;
+}
+
 // Generate turbine list for a specific wind farm
 function getTurbineListForFarm(farmId) {
-  const farm = WIND_FARMS.find(f => f.id === farmId);
+  const farm = getWindFarm(farmId);
   if (!farm) return [];
   return Array.from({ length: farm.turbineCount }, (_, i) => ({
     id: `WTG-${String(i + 1).padStart(2, "0")}`,
@@ -559,7 +600,7 @@ const TURBINE_LIST = getTurbineListForFarm("BALTIC-POWER");
 // Resolve the toolkit template for a given farm
 // Custom assignments + custom templates take priority over built-in ones
 function getToolkitForFarm(farmId) {
-  const farm = WIND_FARMS.find(f => f.id === farmId);
+  const farm = getWindFarm(farmId);
   if (!farm) return TOOLKIT_TEMPLATES["V236_STANDARD"];
   const assignedId = getFarmTemplateAssignment(farmId) || farm.toolkit;
   return getEffectiveTemplate(assignedId) || TOOLKIT_TEMPLATES["V236_STANDARD"];
@@ -567,7 +608,7 @@ function getToolkitForFarm(farmId) {
 
 // Resolve which template ID a farm is using (custom assignment or default)
 function getFarmTemplateId(farmId) {
-  return getFarmTemplateAssignment(farmId) || (WIND_FARMS.find(f => f.id === farmId) || {}).toolkit || "V236_STANDARD";
+  return getFarmTemplateAssignment(farmId) || (getWindFarm(farmId) || {}).toolkit || "V236_STANDARD";
 }
 
 // ---- Custom Template Storage (localStorage, future: SharePoint) ----

@@ -10,18 +10,19 @@
 
   <header class="header">
     <div class="header-top">
-      <div class="header-logo">
+      <a href="index.html" class="header-logo header-logo-link" title="Back to home">
         <img src="img/vestas-logo.jpg" alt="Vestas" class="logo-icon">
         <div>
           <h1>Toolkit Manager</h1>
           <div class="subtitle">Edit toolkit templates per wind farm</div>
         </div>
-      </div>
+      </a>
     </div>
   </header>
 
   <nav class="nav-links">
-    <a href="index.html">Toolkit Checker</a>
+    <a href="index.html">Home</a>
+    <a href="check.html">Toolkit Checker</a>
     <a href="dashboard.html">Dashboard</a>
     <a href="qr-codes.html">QR Codes</a>
     <a href="toolkit-manager.html" class="active">Toolkit Manager</a>
@@ -34,7 +35,8 @@
       <div class="card-body" style="padding: 16px 20px;">
         <strong style="color: var(--vestas-navy);">How to set up your site's toolkit:</strong>
         <ol style="margin: 8px 0 0 16px; font-size: 14px; color: var(--vestas-gray); line-height: 1.7;">
-          <li><strong>Select</strong> the V236 Standard template below</li>
+          <li><strong>Add or select your wind farm</strong> in the Wind Farms section below</li>
+          <li><strong>Select</strong> the V236 Standard template</li>
           <li><strong>Export as CSV</strong> — opens in Excel</li>
           <li><strong>Edit</strong> the file: add, remove, or rename tools to match your site</li>
           <li><strong>Create a new template</strong> (+ New Template), then <strong>import your CSV</strong></li>
@@ -158,6 +160,100 @@
         <h2>Template Contents</h2>
       </div>
       <div class="card-body" id="template-contents"></div>
+    </div>
+
+    <!-- ======== Wind Farm Management ======== -->
+    <div class="card" style="margin-top: 32px; border-top: 3px solid var(--vestas-blue);">
+      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Wind Farms</h2>
+        <button class="btn btn-primary" id="btn-add-farm" style="font-size: 13px;">+ Add Wind Farm</button>
+      </div>
+      <div class="card-body">
+        <p style="font-size: 13px; color: var(--vestas-gray); margin-bottom: 12px;">
+          Manage wind farms available across the app. Built-in farms can be edited; custom farms can be deleted.
+        </p>
+
+        <!-- Add / Edit Farm dialog (hidden by default) -->
+        <div id="farm-dialog" style="display: none; margin-bottom: 16px; padding: 16px; border: 1px solid var(--vestas-light-blue); border-radius: 8px; background: #f0f8ff;">
+          <h3 id="farm-dialog-title" style="margin-bottom: 12px;">Add Wind Farm</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="farm-id-input">Farm ID</label>
+              <input type="text" id="farm-id-input" placeholder="e.g. MY-FARM">
+              <small style="color: var(--vestas-gray);">Uppercase, hyphens OK. Cannot be changed later.</small>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="farm-name-input">Farm Name</label>
+              <input type="text" id="farm-name-input" placeholder="e.g. My Wind Farm">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="farm-country-input">Country</label>
+              <input type="text" id="farm-country-input" placeholder="e.g. Germany">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="farm-region-input">Region</label>
+              <select id="farm-region-input">
+                <option value="NCE">NCE — North & Central Europe</option>
+                <option value="AME">AME — Americas</option>
+                <option value="APAC">APAC — Asia Pacific</option>
+                <option value="MED">MED — Mediterranean</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="farm-wtgtype-input">WTG Type</label>
+              <input type="text" id="farm-wtgtype-input" placeholder="e.g. V236 Mk0A" value="V236 Mk0A">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="farm-capacity-input">Capacity (MW)</label>
+              <input type="number" id="farm-capacity-input" placeholder="e.g. 800" min="0">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="farm-turbines-input">Number of Turbines</label>
+              <input type="number" id="farm-turbines-input" placeholder="e.g. 50" min="1">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="farm-toolkit-input">Default Template</label>
+              <select id="farm-toolkit-input"></select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="farm-scd-input">Service Commencement Date</label>
+              <input type="date" id="farm-scd-input">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="farm-sp-input">SP Number</label>
+              <input type="text" id="farm-sp-input" placeholder="e.g. 61793">
+            </div>
+            <div class="form-group" style="grid-column: 1 / -1; margin-bottom: 0;">
+              <label for="farm-manager-input">Service Manager</label>
+              <input type="text" id="farm-manager-input" placeholder="e.g. John Doe">
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button class="btn btn-primary" id="btn-farm-save">Save</button>
+            <button class="btn btn-outline" id="btn-farm-cancel">Cancel</button>
+          </div>
+        </div>
+
+        <!-- Farm Table -->
+        <div style="overflow-x: auto;">
+          <table class="data-table" style="font-size: 13px; width: 100%;" id="farms-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Country</th>
+                <th>Region</th>
+                <th>WTG Type</th>
+                <th>WTGs</th>
+                <th>MW</th>
+                <th>Template</th>
+                <th style="width: 90px;"></th>
+              </tr>
+            </thead>
+            <tbody id="farms-tbody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
   </div>
