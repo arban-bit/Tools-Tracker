@@ -180,6 +180,29 @@ TOOLKIT_TEMPLATES["V236_STANDARD"] = {
       id: 3,
       name: "Drawer 3",
       description: "Combination Spanners",
+      imageUrl: "img/drawers/d3.jpg",
+      // Demo hotspots: 23 vertical rectangles in a single horizontal row, sized for combination spanners.
+      // Adjust x/y/w/h (normalized 0-1, relative to image dimensions) to match your actual photo.
+      // See app/img/drawers/README.md for tuning guidance.
+      hotspots: (function () {
+        const out = [];
+        const count = 23;
+        const startX = 0.015;
+        const stepX = 0.043;
+        const w = 0.034;
+        const y = 0.30;
+        const h = 0.45;
+        for (let i = 0; i < count; i++) {
+          out.push({
+            itemId: "d3-" + String(i + 1).padStart(3, "0"),
+            x: +(startX + i * stepX).toFixed(4),
+            y: y,
+            w: w,
+            h: h
+          });
+        }
+        return out;
+      })(),
       groups: [
         {
           name: "Combination Spanners",

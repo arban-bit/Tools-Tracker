@@ -10,6 +10,7 @@
   let technicianName = "";
   let currentDrawer = 1;
   let activeToolkit = TOOLKIT_DATA; // switches per farm
+  let viewMode = "list"; // "visual" or "list" — auto-switches to "visual" when drawer has a photo
   const itemStatus = {};
 
   // ---- URL Params (from QR code) ----
@@ -191,11 +192,31 @@
     const drawer = activeToolkit.drawers.find(d => d.id === drawerId);
     if (!drawer) return;
 
+    const visualAvailable = typeof DrawerVisual !== "undefined" && DrawerVisual.hasVisual(drawer);
+
+    // Auto-switch to visual the first time we land on a drawer that has a photo,
+    // unless the user has explicitly chosen list mode for this session.
+    if (visualAvailable && viewMode === "list" && !window.__userPickedView) {
+      viewMode = "visual";
+    }
+    if (!visualAvailable && viewMode === "visual") {
+      viewMode = "list";
+    }
+
+    const visualBtnAttrs = visualAvailable ? "" : "disabled";
+    const visualBtnTitle = visualAvailable ? "Photo view" : "No photo for this drawer";
+
     let html = `
       <div class="fade-in">
-        <div style="padding: 12px 0 4px;">
-          <h2 style="font-size: 18px; color: var(--vestas-navy);">${drawer.name}</h2>
-          <p style="font-size: 13px; color: var(--vestas-gray); margin-top: 2px;">${drawer.description}</p>
+        <div class="drawer-header-row">
+          <div>
+            <h2 style="font-size: 18px; color: var(--vestas-navy);">${drawer.name}</h2>
+            <p style="font-size: 13px; color: var(--vestas-gray); margin-top: 2px;">${drawer.description}</p>
+          </div>
+          <div class="view-toggle" role="tablist" aria-label="View mode">
+            <button data-view="visual" class="${viewMode === "visual" ? "active" : ""}" ${visualBtnAttrs} title="${visualBtnTitle}">📷 Photo</button>
+            <button data-view="list" class="${viewMode === "list" ? "active" : ""}" title="List view">📋 List</button>
+          </div>
         </div>
 
         <div class="toggle-all-row">
@@ -205,8 +226,38 @@
             <button onclick="markAllDrawer(${drawerId}, false)">✕ All Missing</button>
           </div>
         </div>
+        <div id="drawer-body"></div>
+      </div>
     `;
 
+    drawerContent.innerHTML = html;
+
+    // Bind view-toggle buttons
+    drawerContent.querySelectorAll(".view-toggle button[data-view]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (btn.disabled) return;
+        viewMode = btn.dataset.view;
+        window.__userPickedView = true;
+        renderDrawerContent(currentDrawer);
+      });
+    });
+
+    const body = drawerContent.querySelector("#drawer-body");
+
+    if (viewMode === "visual" && visualAvailable) {
+      DrawerVisual.render(
+        body,
+        drawer,
+        id => !!itemStatus[id],
+        id => window.toggleItem(id)
+      );
+    } else {
+      renderListView(body, drawer);
+    }
+  }
+
+  function renderListView(container, drawer) {
+    let html = "";
     for (const group of drawer.groups) {
       const presentCount = group.items.filter(i => itemStatus[i.id]).length;
       html += `
@@ -230,9 +281,7 @@
 
       html += `</div>`;
     }
-
-    html += `</div>`;
-    drawerContent.innerHTML = html;
+    container.innerHTML = html;
   }
 
   // ---- Toggle Item ----

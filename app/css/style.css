@@ -1023,6 +1023,224 @@ tr:hover td {
   background: rgba(0, 112, 192, 0.1);
 }
 
+/* ---- View Mode Toggle (Visual / List) ---- */
+.view-toggle {
+  display: inline-flex;
+  background: var(--vestas-light);
+  border-radius: 999px;
+  padding: 3px;
+  border: 1px solid var(--vestas-border);
+  margin-left: auto;
+}
+
+.view-toggle button {
+  background: none;
+  border: none;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vestas-gray);
+  cursor: pointer;
+  border-radius: 999px;
+  transition: var(--transition);
+}
+
+.view-toggle button.active {
+  background: var(--vestas-blue);
+  color: var(--vestas-white);
+  box-shadow: 0 1px 3px rgba(0, 112, 192, 0.3);
+}
+
+.view-toggle button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.drawer-header-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0 4px;
+  flex-wrap: wrap;
+}
+
+.drawer-header-row > div:first-child {
+  flex: 1;
+  min-width: 200px;
+}
+
+/* ---- Drawer Visual Mode ---- */
+.drawer-visual {
+  margin-bottom: 16px;
+}
+
+.dv-frame {
+  position: relative;
+  width: 100%;
+  background: #1a1a1a;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  line-height: 0;
+}
+
+.dv-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.dv-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.dv-hotspot {
+  position: absolute;
+  background: rgba(40, 167, 69, 0.18);
+  border: 2px solid rgba(40, 167, 69, 0.85);
+  border-radius: 6px;
+  padding: 0;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.dv-hotspot:hover {
+  background: rgba(40, 167, 69, 0.35);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8);
+  z-index: 5;
+}
+
+.dv-hotspot:active {
+  transform: scale(0.95);
+}
+
+.dv-hotspot.missing {
+  background: rgba(220, 53, 69, 0.35);
+  border-color: rgba(220, 53, 69, 0.95);
+  animation: dv-pulse 1.5s ease-in-out infinite;
+}
+
+.dv-hotspot.missing:hover {
+  background: rgba(220, 53, 69, 0.55);
+}
+
+@keyframes dv-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.6); }
+  50% { box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
+}
+
+.dv-marker {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.dv-empty,
+.dv-error {
+  background: var(--vestas-light);
+  border: 1px dashed var(--vestas-border);
+  border-radius: var(--radius);
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--vestas-gray);
+  font-size: 14px;
+}
+
+.dv-error {
+  background: #fff5f5;
+  border-color: var(--vestas-red);
+  color: var(--vestas-red);
+}
+
+.dv-empty code,
+.dv-error code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+/* Items not on photo */
+.dv-unmapped {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--vestas-light);
+  border-radius: var(--radius);
+  border: 1px solid var(--vestas-border);
+}
+
+.dv-unmapped-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--vestas-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 8px;
+}
+
+.dv-unmapped-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 6px;
+}
+
+.dv-unmapped-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--vestas-white);
+  border: 1px solid var(--vestas-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+  transition: var(--transition);
+}
+
+.dv-unmapped-item.present {
+  border-left: 3px solid var(--vestas-green);
+}
+
+.dv-unmapped-item.missing {
+  border-left: 3px solid var(--vestas-red);
+  background: #fff5f5;
+}
+
+.dv-unmapped-item .dv-marker {
+  font-size: 13px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--vestas-white);
+}
+
+.dv-unmapped-item.present .dv-marker {
+  background: var(--vestas-green);
+}
+
+.dv-unmapped-item.missing .dv-marker {
+  background: var(--vestas-red);
+}
+
+.dv-unmapped-item:hover {
+  border-color: var(--vestas-blue);
+}
+
 /* ---- Data Table ---- */
 .data-table {
   border-collapse: collapse;
