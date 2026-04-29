@@ -234,11 +234,20 @@
 
     for (const drawer of tpl.drawers) {
       const itemCount = drawer.groups.reduce((sum, g) => sum + g.items.length, 0);
+      const hsCount = Array.isArray(drawer.hotspots) ? drawer.hotspots.length : 0;
+      const hasImg = !!drawer.imageUrl;
+      const hsBadge = hsCount > 0
+        ? `<span style="font-size: 11px; background: var(--vestas-green); color: white; padding: 2px 8px; border-radius: 3px;">📷 ${hsCount}/${itemCount} mapped</span>`
+        : (hasImg
+            ? `<span style="font-size: 11px; background: var(--vestas-orange); color: white; padding: 2px 8px; border-radius: 3px;">📷 image set, no hotspots</span>`
+            : `<span style="font-size: 11px; background: var(--vestas-gray); color: white; padding: 2px 8px; border-radius: 3px;">no photo</span>`);
       html += `
         <div class="tool-group" style="margin-bottom: 12px;">
-          <div class="tool-group-header">
-            <h3>${drawer.name} — ${drawer.description || ""}</h3>
+          <div class="tool-group-header" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <h3 style="flex: 1; min-width: 200px;">${drawer.name} — ${drawer.description || ""}</h3>
+            ${hsBadge}
             <span class="group-count">${itemCount} items</span>
+            <button type="button" class="btn btn-outline btn-edit-hotspots" data-drawer="${drawer.id}" style="font-size: 12px; padding: 4px 10px;">✎ Edit Hotspots</button>
           </div>
       `;
       for (const group of drawer.groups) {
@@ -253,6 +262,23 @@
     }
 
     templateContents.innerHTML = html;
+
+    // Bind hotspot-editor buttons
+    templateContents.querySelectorAll(".btn-edit-hotspots").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const dId = parseInt(btn.dataset.drawer, 10);
+        if (typeof HotspotEditor === "undefined") {
+          alert("Hotspot editor failed to load. Please refresh the page.");
+          return;
+        }
+        HotspotEditor.open(selectedTemplateId, dId, () => {
+          populateTemplateSelect();
+          templateSelect.value = selectedTemplateId;
+          onTemplateChange();
+          showToast("Hotspots saved.");
+        });
+      });
+    });
   }
 
   // ---- Export JSON ----

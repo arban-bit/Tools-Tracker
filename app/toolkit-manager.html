@@ -258,7 +258,34 @@
 
   </div>
 
+  <!-- ======== Hotspot Editor (full-screen overlay) ======== -->
+  <div id="hotspot-editor-overlay" class="he-overlay">
+    <div class="he-modal">
+      <div class="he-header">
+        <div class="he-title">Hotspot Editor</div>
+        <div class="he-counts">0 / 0 items mapped</div>
+        <div style="flex:1;"></div>
+        <button class="btn btn-outline he-cancel" type="button">Cancel</button>
+        <button class="btn btn-primary he-save" type="button">Save</button>
+      </div>
+      <div class="he-toolbar">
+        <label style="font-size:12px;color:var(--vestas-gray);">Image path</label>
+        <input type="text" class="he-path" placeholder="img/drawers/d3.jpg" style="flex:1;min-width:200px;">
+        <button class="btn btn-outline he-delete" type="button" disabled>🗑 Delete selected</button>
+      </div>
+      <div class="he-hint">Click an item on the right, then drag a rectangle on the photo.</div>
+      <div class="he-body">
+        <div class="he-frame">
+          <img class="he-img" alt="Drawer photo">
+          <div class="he-layer"></div>
+        </div>
+        <div class="he-items"></div>
+      </div>
+    </div>
+  </div>
+
   <script src="js/toolkit-data.js"></script>
+  <script src="js/hotspot-editor.js"></script>
   <script src="js/toolkit-manager.js"></script>
 </body>
 </html>
