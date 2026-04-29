@@ -235,20 +235,30 @@
     for (const drawer of tpl.drawers) {
       const itemCount = drawer.groups.reduce((sum, g) => sum + g.items.length, 0);
       const hsCount = Array.isArray(drawer.hotspots) ? drawer.hotspots.length : 0;
-      const hasImg = !!drawer.imageUrl;
+      const imgPath = effectiveDrawerImagePath(drawer);
+      const hasCustomImg = !!drawer.imageUrl;
+      const isDataUrl = hasCustomImg && drawer.imageUrl.startsWith("data:");
+      const pathLabel = isDataUrl ? "uploaded image" : imgPath;
+      // Probe-status placeholder: filled in async after render
+      const probeBadge = `<span class="img-status-badge" data-drawer="${drawer.id}" style="font-size: 11px; background: var(--vestas-gray); color: white; padding: 2px 8px; border-radius: 3px;">📷 checking…</span>`;
       const hsBadge = hsCount > 0
-        ? `<span style="font-size: 11px; background: var(--vestas-green); color: white; padding: 2px 8px; border-radius: 3px;">📷 ${hsCount}/${itemCount} mapped</span>`
-        : (hasImg
-            ? `<span style="font-size: 11px; background: var(--vestas-orange); color: white; padding: 2px 8px; border-radius: 3px;">📷 image set, no hotspots</span>`
-            : `<span style="font-size: 11px; background: var(--vestas-gray); color: white; padding: 2px 8px; border-radius: 3px;">no photo</span>`);
+        ? `<span style="font-size: 11px; background: var(--vestas-green); color: white; padding: 2px 8px; border-radius: 3px;">${hsCount}/${itemCount} mapped</span>`
+        : `<span style="font-size: 11px; background: var(--vestas-orange); color: white; padding: 2px 8px; border-radius: 3px;">no hotspots</span>`;
+      const removeBtn = hasCustomImg
+        ? `<button type="button" class="btn btn-outline btn-remove-image" data-drawer="${drawer.id}" style="font-size: 12px; padding: 4px 10px;" title="Remove uploaded image and revert to default folder path">✕ Remove image</button>`
+        : "";
       html += `
         <div class="tool-group" style="margin-bottom: 12px;">
           <div class="tool-group-header" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <h3 style="flex: 1; min-width: 200px;">${drawer.name} — ${drawer.description || ""}</h3>
+            ${probeBadge}
             ${hsBadge}
             <span class="group-count">${itemCount} items</span>
+            <button type="button" class="btn btn-outline btn-upload-image" data-drawer="${drawer.id}" style="font-size: 12px; padding: 4px 10px;" title="Upload a photo for this drawer">⬆ Upload Photo</button>
+            ${removeBtn}
             <button type="button" class="btn btn-outline btn-edit-hotspots" data-drawer="${drawer.id}" style="font-size: 12px; padding: 4px 10px;">✎ Edit Hotspots</button>
           </div>
+          <div style="font-size: 11px; color: var(--vestas-gray); padding: 4px 8px; font-family: monospace;">📁 ${pathLabel}</div>
       `;
       for (const group of drawer.groups) {
         html += `<div style="padding: 4px 0 4px 8px; font-weight: 600; font-size: 13px; color: var(--vestas-blue);">${group.name} (${group.items.length})</div>`;
@@ -262,6 +272,29 @@
     }
 
     templateContents.innerHTML = html;
+
+    // Async-probe whether each drawer's photo actually exists, then update its badge
+    for (const drawer of tpl.drawers) {
+      const url = effectiveDrawerImagePath(drawer);
+      const isDataUrl = drawer.imageUrl && drawer.imageUrl.startsWith("data:");
+      const badge = templateContents.querySelector(`.img-status-badge[data-drawer="${drawer.id}"]`);
+      if (!badge) continue;
+      if (isDataUrl) {
+        badge.style.background = "var(--vestas-green)";
+        badge.textContent = "📷 uploaded";
+        continue;
+      }
+      probeImage(url).then(exists => {
+        if (exists) {
+          badge.style.background = "var(--vestas-green)";
+          badge.textContent = "📷 photo found";
+        } else {
+          badge.style.background = "var(--vestas-gray)";
+          badge.textContent = "📷 no photo";
+          badge.title = `Expected at: ${url}`;
+        }
+      });
+    }
 
     // Bind hotspot-editor buttons
     templateContents.querySelectorAll(".btn-edit-hotspots").forEach(btn => {
@@ -279,6 +312,71 @@
         });
       });
     });
+
+    // Bind upload-image buttons
+    templateContents.querySelectorAll(".btn-upload-image").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const dId = parseInt(btn.dataset.drawer, 10);
+        triggerImageUpload(dId);
+      });
+    });
+
+    // Bind remove-image buttons
+    templateContents.querySelectorAll(".btn-remove-image").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const dId = parseInt(btn.dataset.drawer, 10);
+        if (!confirm(`Remove the uploaded image for Drawer ${dId}?\n\nThe drawer will fall back to the default path img/drawers/d${dId}.jpg.`)) return;
+        applyDrawerImageChange(dId, null);
+      });
+    });
+  }
+
+  // ---- Drawer Image Upload ----
+  function triggerImageUpload(drawerId) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/jpeg,image/png,image/webp";
+    input.style.display = "none";
+    document.body.appendChild(input);
+    input.addEventListener("change", () => {
+      const file = input.files && input.files[0];
+      document.body.removeChild(input);
+      if (!file) return;
+      // Soft-warn for very large files (localStorage cap is ~5MB)
+      if (file.size > 2 * 1024 * 1024) {
+        if (!confirm(`This image is ${(file.size / 1024 / 1024).toFixed(1)} MB. Large images may exceed browser storage limits.\n\nContinue anyway?`)) return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => applyDrawerImageChange(drawerId, reader.result);
+      reader.onerror = () => alert("Failed to read the image file.");
+      reader.readAsDataURL(file);
+    });
+    input.click();
+  }
+
+  function applyDrawerImageChange(drawerId, dataUrlOrNull) {
+    const tpl = getEffectiveTemplate(selectedTemplateId);
+    if (!tpl) return;
+    // Deep clone so we never mutate built-ins
+    const working = JSON.parse(JSON.stringify(tpl));
+    const drawer = working.drawers.find(d => d.id === drawerId);
+    if (!drawer) { alert(`Drawer ${drawerId} not found.`); return; }
+    if (dataUrlOrNull) {
+      drawer.imageUrl = dataUrlOrNull;
+    } else {
+      delete drawer.imageUrl;
+    }
+    try {
+      saveCustomTemplate(selectedTemplateId, working);
+    } catch (err) {
+      // QuotaExceededError likely
+      alert("Could not save image. Storage may be full.\n\n" + (err && err.message ? err.message : err));
+      return;
+    }
+    populateTemplateSelect();
+    templateSelect.value = selectedTemplateId;
+    onTemplateChange();
+    showToast(dataUrlOrNull ? "Image uploaded." : "Image removed.");
   }
 
   // ---- Export JSON ----

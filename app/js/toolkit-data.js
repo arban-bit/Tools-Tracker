@@ -682,6 +682,26 @@ function getEffectiveTemplate(templateId) {
   return getCustomTemplate(templateId) || TOOLKIT_TEMPLATES[templateId] || null;
 }
 
+// Returns the image URL to use for a drawer:
+// - explicit drawer.imageUrl (data URL or path) takes priority
+// - otherwise convention path: img/drawers/d{id}.jpg
+function effectiveDrawerImagePath(drawer) {
+  if (!drawer) return null;
+  if (drawer.imageUrl) return drawer.imageUrl;
+  return "img/drawers/d" + drawer.id + ".jpg";
+}
+
+// Async-probe whether an image URL actually loads. Returns Promise<boolean>.
+function probeImage(url) {
+  return new Promise(function (resolve) {
+    if (!url) { resolve(false); return; }
+    const img = new Image();
+    img.onload = function () { resolve(true); };
+    img.onerror = function () { resolve(false); };
+    img.src = url;
+  });
+}
+
 // Get list of all known template IDs (built-in + custom)
 function getAllTemplateIds() {
   const builtIn = Object.keys(TOOLKIT_TEMPLATES);

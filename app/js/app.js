@@ -120,6 +120,19 @@
     document.getElementById("btn-new-check").addEventListener("click", resetApp);
     const btnCancel = document.getElementById("btn-cancel-check");
     if (btnCancel) btnCancel.addEventListener("click", cancelChecklist);
+
+    // Selected-items panel toggle
+    const spToggle = document.getElementById("selected-panel-toggle");
+    if (spToggle) {
+      spToggle.addEventListener("click", () => {
+        const body = document.getElementById("selected-panel-body");
+        const caret = spToggle.querySelector(".sp-caret");
+        const expanded = spToggle.getAttribute("aria-expanded") === "true";
+        spToggle.setAttribute("aria-expanded", String(!expanded));
+        body.hidden = expanded;
+        if (caret) caret.textContent = expanded ? "▸" : "▾";
+      });
+    }
   }
 
   function cancelChecklist() {
@@ -327,6 +340,53 @@
     document.getElementById("stat-present").textContent = present;
     document.getElementById("stat-missing").textContent = missing;
     document.getElementById("stat-total").textContent = total;
+
+    renderSelectedPanel();
+  }
+
+  // ---- Selected Items Panel ----
+  function renderSelectedPanel() {
+    const body = document.getElementById("selected-panel-body");
+    const countEl = document.getElementById("selected-panel-count");
+    if (!body || !countEl || !activeToolkit) return;
+
+    let total = 0;
+    let html = "";
+    for (const drawer of activeToolkit.drawers) {
+      const present = [];
+      for (const group of drawer.groups) {
+        for (const item of group.items) {
+          if (itemStatus[item.id]) present.push(item);
+        }
+      }
+      if (present.length === 0) continue;
+      total += present.length;
+      html +=
+        '<div class="sp-drawer">' +
+          '<div class="sp-drawer-head">' +
+            '<span>' + escapeHtml(drawer.name) + '</span>' +
+            '<span class="sp-drawer-count">' + present.length + '</span>' +
+          '</div>' +
+          '<ul class="sp-list">' +
+            present.map(it =>
+              '<li><span class="sp-check">✓</span><span class="sp-name">' + escapeHtml(it.name) + '</span><span class="sp-id">' + escapeHtml(it.id) + '</span></li>'
+            ).join("") +
+          '</ul>' +
+        '</div>';
+    }
+
+    countEl.textContent = total;
+    if (total === 0) {
+      body.innerHTML = '<div class="sp-empty">No items selected yet. Tap a tool above to mark it present.</div>';
+    } else {
+      body.innerHTML = html;
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, c =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+    );
   }
 
   // ---- Submit ----

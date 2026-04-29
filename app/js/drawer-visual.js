@@ -14,7 +14,15 @@ const DrawerVisual = (function () {
   "use strict";
 
   function hasVisual(drawer) {
-    return !!(drawer && drawer.imageUrl && Array.isArray(drawer.hotspots) && drawer.hotspots.length > 0);
+    // Visual mode is offered when there are hotspots to interact with.
+    // The image path defaults to the convention img/drawers/d{id}.jpg, so an
+    // explicit imageUrl is no longer required.
+    return !!(drawer && Array.isArray(drawer.hotspots) && drawer.hotspots.length > 0);
+  }
+
+  function imagePath(drawer) {
+    if (typeof effectiveDrawerImagePath === "function") return effectiveDrawerImagePath(drawer);
+    return drawer.imageUrl || ("img/drawers/d" + drawer.id + ".jpg");
   }
 
   function findItem(drawer, itemId) {
@@ -86,12 +94,13 @@ const DrawerVisual = (function () {
       unmappedHtml += '</div></div>';
     }
 
+    const url = imagePath(drawer);
     container.innerHTML =
       '<div class="drawer-visual">' +
       '<div class="dv-frame">' +
-      '<img src="' + esc(drawer.imageUrl) + '" alt="' + esc(drawer.name) + '" class="dv-img"' +
+      '<img src="' + esc(url) + '" alt="' + esc(drawer.name) + '" class="dv-img"' +
       ' onerror="this.parentNode.innerHTML=\'<div class=\\\'dv-error\\\'>Photo not found at ' +
-      esc(drawer.imageUrl) + '</div>\'">' +
+      esc(url) + '</div>\'">' +
       '<div class="dv-overlay">' + hotspotsHtml + '</div>' +
       '</div>' +
       unmappedHtml +
